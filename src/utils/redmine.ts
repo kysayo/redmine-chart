@@ -32,16 +32,26 @@ async function apiFetch<T>(path: string): Promise<T> {
   return res.json() as Promise<T>
 }
 
-export async function fetchIssue(id: number): Promise<RedmineIssue> {
-  const data = await apiFetch<{ issue: RedmineIssue }>(`/issues/${id}.json`)
-  return data.issue
-}
-
 export async function fetchChildIssues(parentId: number): Promise<RedmineIssue[]> {
   const data = await apiFetch<{ issues: RedmineIssue[] }>(
     `/issues.json?parent_id=${parentId}&limit=100`,
   )
   return data.issues
+}
+
+// 子チケット全件の子（孫）を並列取得。結果: Map<childId, grandChildren[]>
+export async function fetchGrandChildren(
+  children: RedmineIssue[],
+): Promise<Map<number, RedmineIssue[]>> {
+  const entries = await Promise.all(
+    children.map(async child => {
+      const data = await apiFetch<{ issues: RedmineIssue[] }>(
+        `/issues.json?parent_id=${child.id}&limit=100`,
+      )
+      return [child.id, data.issues] as [number, RedmineIssue[]]
+    }),
+  )
+  return new Map(entries)
 }
 
 // --- グルーピング型定義 ---
@@ -56,10 +66,7 @@ export interface GroupOption {
   field: GroupField
 }
 
-export function buildGroupOptions(
-  parent: RedmineIssue,
-  children: RedmineIssue[],
-): GroupOption[] {
+export function buildGroupOptions(children: RedmineIssue[]): GroupOption[] {
   const standard: GroupOption[] = [
     { value: 'status', label: 'ステータス', field: { type: 'standard', key: 'status' } },
     { value: 'priority', label: '優先度', field: { type: 'standard', key: 'priority' } },
@@ -67,7 +74,7 @@ export function buildGroupOptions(
   ]
 
   const cfMap = new Map<number, string>()
-  for (const issue of [parent, ...children]) {
+  for (const issue of children) {
     for (const cf of issue.custom_fields ?? []) {
       if (!cfMap.has(cf.id)) cfMap.set(cf.id, cf.name)
     }
@@ -93,62 +100,77 @@ function getFieldValue(issue: RedmineIssue, field: GroupField): string {
   return cf.value || '（未設定）'
 }
 
+function pushChildEntry(
+  groups: DataGroup[],
+  items: DataItem[],
+  child: RedmineIssue,
+  subChildren: RedmineIssue[],
+) {
+  const subGroupIds = subChildren.map(gc => `g-${gc.id}`)
+  groups.push({
+    id: `g-${child.id}`,
+    content: `#${child.id} ${child.subject}`,
+    nestedGroups: subGroupIds.length > 0 ? subGroupIds : undefined,
+    showNested: true,
+  })
+  if (child.start_date && child.due_date) {
+    items.push({
+      id: `i-${child.id}`,
+      group: `g-${child.id}`,
+      content: '',
+      start: child.start_date,
+      end: child.due_date,
+      type: 'range',
+    })
+  }
+  for (const gc of subChildren) {
+    groups.push({
+      id: `g-${gc.id}`,
+      content: `#${gc.id} ${gc.subject}`,
+    })
+    if (gc.start_date && gc.due_date) {
+      items.push({
+        id: `i-${gc.id}`,
+        group: `g-${gc.id}`,
+        content: '',
+        start: gc.start_date,
+        end: gc.due_date,
+        type: 'range',
+      })
+    }
+  }
+}
+
 // --- vis-timeline 変換 ---
 
 export function issuesToGantt(
-  parent: RedmineIssue,
   children: RedmineIssue[],
+  grandChildren: Map<number, RedmineIssue[]>,
   groupByField?: GroupField,
 ): { groups: DataGroup[]; items: DataItem[] } {
   const groups: DataGroup[] = []
   const items: DataItem[] = []
 
-  const childGroupIds = children.map(c => `g-${c.id}`)
+  if (!groupByField) {
+    // デフォルト: 子チケットをフラットに表示（孫ありはネスト）
+    for (const child of children) {
+      pushChildEntry(groups, items, child, grandChildren.get(child.id) ?? [])
+    }
+    return { groups, items }
+  }
 
-  // 3階層: フィールド値グループ → 親チケット → 子チケット
-  if (groupByField) {
-    const fieldValue = getFieldValue(parent, groupByField)
-    const topId = `top-${fieldValue}`
+  // グルーピングあり: 子チケットのフィールド値で最上位グループを作る
+  const uniqueValues = [...new Set(children.map(c => getFieldValue(c, groupByField)))]
+  for (const value of uniqueValues) {
+    const valueChildren = children.filter(c => getFieldValue(c, groupByField) === value)
     groups.push({
-      id: topId,
-      content: fieldValue,
-      nestedGroups: [`g-${parent.id}`],
+      id: `top-${value}`,
+      content: value,
+      nestedGroups: valueChildren.map(c => `g-${c.id}`),
       showNested: true,
     })
-  }
-
-  groups.push({
-    id: `g-${parent.id}`,
-    content: `#${parent.id} ${parent.subject}`,
-    nestedGroups: childGroupIds.length > 0 ? childGroupIds : undefined,
-    showNested: true,
-  })
-
-  if (parent.start_date && parent.due_date) {
-    items.push({
-      id: `i-${parent.id}`,
-      group: `g-${parent.id}`,
-      content: '',
-      start: parent.start_date,
-      end: parent.due_date,
-      type: 'range',
-    })
-  }
-
-  for (const child of children) {
-    groups.push({
-      id: `g-${child.id}`,
-      content: `#${child.id} ${child.subject}`,
-    })
-    if (child.start_date && child.due_date) {
-      items.push({
-        id: `i-${child.id}`,
-        group: `g-${child.id}`,
-        content: '',
-        start: child.start_date,
-        end: child.due_date,
-        type: 'range',
-      })
+    for (const child of valueChildren) {
+      pushChildEntry(groups, items, child, grandChildren.get(child.id) ?? [])
     }
   }
 

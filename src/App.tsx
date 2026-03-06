@@ -2,8 +2,8 @@ import { useState, useEffect, useMemo } from 'react'
 import Select from 'react-select'
 import GanttChart from './components/GanttChart'
 import {
-  fetchIssue,
   fetchChildIssues,
+  fetchGrandChildren,
   issuesToGantt,
   buildGroupOptions,
 } from './utils/redmine'
@@ -15,8 +15,8 @@ function getCurrentIssueId(): number | null {
 }
 
 export default function App() {
-  const [parent, setParent] = useState<RedmineIssue | null>(null)
   const [children, setChildren] = useState<RedmineIssue[]>([])
+  const [grandChildren, setGrandChildren] = useState<Map<number, RedmineIssue[]>>(new Map())
   const [groupByField, setGroupByField] = useState<GroupField | null>(null)
   const [error, setError] = useState<string | null>(null)
 
@@ -24,24 +24,23 @@ export default function App() {
     const id = getCurrentIssueId()
     if (id === null) return
 
-    Promise.all([fetchIssue(id), fetchChildIssues(id)])
-      .then(([p, c]) => {
-        setParent(p)
+    fetchChildIssues(id)
+      .then(async c => {
         setChildren(c)
+        const gc = await fetchGrandChildren(c)
+        setGrandChildren(gc)
       })
       .catch(err => setError(String(err)))
   }, [])
 
   const groupOptions = useMemo(
-    () => parent ? buildGroupOptions(parent, children) : [],
-    [parent, children],
+    () => buildGroupOptions(children),
+    [children],
   )
 
   const { groups, items } = useMemo(
-    () => parent
-      ? issuesToGantt(parent, children, groupByField ?? undefined)
-      : { groups: [], items: [] },
-    [parent, children, groupByField],
+    () => issuesToGantt(children, grandChildren, groupByField ?? undefined),
+    [children, grandChildren, groupByField],
   )
 
   const selectedOption = groupOptions.find(
