@@ -1,7 +1,13 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
+import Select from 'react-select'
 import GanttChart from './components/GanttChart'
-import { fetchIssue, fetchChildIssues, issuesToGantt } from './utils/redmine'
-import type { DataGroup, DataItem } from 'vis-timeline'
+import {
+  fetchIssue,
+  fetchChildIssues,
+  issuesToGantt,
+  buildGroupOptions,
+} from './utils/redmine'
+import type { RedmineIssue, GroupField, GroupOption } from './utils/redmine'
 
 function getCurrentIssueId(): number | null {
   const match = window.location.pathname.match(/\/issues\/(\d+)/)
@@ -9,8 +15,9 @@ function getCurrentIssueId(): number | null {
 }
 
 export default function App() {
-  const [groups, setGroups] = useState<DataGroup[]>([])
-  const [items, setItems] = useState<DataItem[]>([])
+  const [parent, setParent] = useState<RedmineIssue | null>(null)
+  const [children, setChildren] = useState<RedmineIssue[]>([])
+  const [groupByField, setGroupByField] = useState<GroupField | null>(null)
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
@@ -18,13 +25,28 @@ export default function App() {
     if (id === null) return
 
     Promise.all([fetchIssue(id), fetchChildIssues(id)])
-      .then(([parent, children]) => {
-        const { groups, items } = issuesToGantt(parent, children)
-        setGroups(groups)
-        setItems(items)
+      .then(([p, c]) => {
+        setParent(p)
+        setChildren(c)
       })
       .catch(err => setError(String(err)))
   }, [])
+
+  const groupOptions = useMemo(
+    () => parent ? buildGroupOptions(parent, children) : [],
+    [parent, children],
+  )
+
+  const { groups, items } = useMemo(
+    () => parent
+      ? issuesToGantt(parent, children, groupByField ?? undefined)
+      : { groups: [], items: [] },
+    [parent, children, groupByField],
+  )
+
+  const selectedOption = groupOptions.find(
+    o => JSON.stringify(o.field) === JSON.stringify(groupByField)
+  ) ?? null
 
   return (
     <div style={{ margin: '10px 0' }}>
@@ -33,10 +55,22 @@ export default function App() {
         borderTop: '2px solid #628db6',
         padding: '6px 8px',
         marginBottom: '6px',
-        fontWeight: 'bold',
-        fontSize: '0.9em',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'space-between',
       }}>
-        Chart
+        <span style={{ fontWeight: 'bold', fontSize: '0.9em' }}>Chart</span>
+        <div style={{ width: 220 }}>
+          <Select<GroupOption>
+            options={groupOptions}
+            value={selectedOption}
+            onChange={opt => setGroupByField(opt?.field ?? null)}
+            isClearable
+            placeholder="グルーピング..."
+            menuPortalTarget={document.body}
+            styles={{ menuPortal: base => ({ ...base, zIndex: 9999 }) }}
+          />
+        </div>
       </div>
       {error
         ? <div style={{ color: 'red', padding: '8px' }}>エラー: {error}</div>

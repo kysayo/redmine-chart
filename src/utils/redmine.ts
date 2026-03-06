@@ -44,16 +44,78 @@ export async function fetchChildIssues(parentId: number): Promise<RedmineIssue[]
   return data.issues
 }
 
+// --- グルーピング型定義 ---
+
+export type GroupField =
+  | { type: 'standard'; key: 'status' | 'priority' | 'assigned_to' }
+  | { type: 'custom'; id: number; name: string }
+
+export interface GroupOption {
+  value: string
+  label: string
+  field: GroupField
+}
+
+export function buildGroupOptions(
+  parent: RedmineIssue,
+  children: RedmineIssue[],
+): GroupOption[] {
+  const standard: GroupOption[] = [
+    { value: 'status', label: 'ステータス', field: { type: 'standard', key: 'status' } },
+    { value: 'priority', label: '優先度', field: { type: 'standard', key: 'priority' } },
+    { value: 'assigned_to', label: '担当者', field: { type: 'standard', key: 'assigned_to' } },
+  ]
+
+  const cfMap = new Map<number, string>()
+  for (const issue of [parent, ...children]) {
+    for (const cf of issue.custom_fields ?? []) {
+      if (!cfMap.has(cf.id)) cfMap.set(cf.id, cf.name)
+    }
+  }
+
+  const custom: GroupOption[] = Array.from(cfMap.entries()).map(([id, name]) => ({
+    value: `cf_${id}`,
+    label: name,
+    field: { type: 'custom' as const, id, name },
+  }))
+
+  return [...standard, ...custom]
+}
+
+function getFieldValue(issue: RedmineIssue, field: GroupField): string {
+  if (field.type === 'standard') {
+    if (field.key === 'assigned_to') return issue.assigned_to?.name ?? '（未設定）'
+    return issue[field.key].name
+  }
+  const cf = issue.custom_fields?.find(f => f.id === field.id)
+  if (!cf) return '（未設定）'
+  if (Array.isArray(cf.value)) return cf.value.length > 0 ? cf.value.join(', ') : '（未設定）'
+  return cf.value || '（未設定）'
+}
+
 // --- vis-timeline 変換 ---
 
 export function issuesToGantt(
   parent: RedmineIssue,
   children: RedmineIssue[],
+  groupByField?: GroupField,
 ): { groups: DataGroup[]; items: DataItem[] } {
   const groups: DataGroup[] = []
   const items: DataItem[] = []
 
   const childGroupIds = children.map(c => `g-${c.id}`)
+
+  // 3階層: フィールド値グループ → 親チケット → 子チケット
+  if (groupByField) {
+    const fieldValue = getFieldValue(parent, groupByField)
+    const topId = `top-${fieldValue}`
+    groups.push({
+      id: topId,
+      content: fieldValue,
+      nestedGroups: [`g-${parent.id}`],
+      showNested: true,
+    })
+  }
 
   groups.push({
     id: `g-${parent.id}`,
