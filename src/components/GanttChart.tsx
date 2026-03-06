@@ -2,6 +2,7 @@ import { useEffect, useRef } from 'react'
 import { Timeline } from 'vis-timeline/standalone'
 import { DataSet } from 'vis-data/standalone'
 import type { DataGroup, DataItem, TimelineOptions } from 'vis-timeline'
+import { computeDateRange } from '../utils/redmine'
 
 interface Props {
   groups: DataGroup[]
@@ -15,13 +16,14 @@ export default function GanttChart({ groups, items }: Props) {
   useEffect(() => {
     if (!containerRef.current) return
 
+    const { start, end } = computeDateRange(items)
     const options: TimelineOptions = {
       type: 'range',
       orientation: { axis: 'top' },
       stack: false,
       groupOrder: 'id',
-      start: new Date('2026-02-20'),
-      end: new Date('2026-04-20'),
+      start,
+      end,
     }
 
     if (timelineRef.current) {
