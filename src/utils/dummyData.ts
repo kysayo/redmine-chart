@@ -1,50 +1,28 @@
-export interface GanttTask {
-  id: string
-  name: string
-  start: string
-  end: string
-  progress: number
-  dependencies?: string
-}
+import type { DataGroup, DataItem } from 'vis-timeline'
 
-export const dummyTasks: GanttTask[] = [
+export const dummyGroups: DataGroup[] = [
   {
-    id: '1',
-    name: '要件定義',
-    start: '2026-03-01',
-    end: '2026-03-07',
-    progress: 100,
+    id: 'g-p1',
+    content: '#46043 保守高度化施策',
+    nestedGroups: ['g-c1', 'g-c2', 'g-c3'],
+    showNested: true,
   },
+  { id: 'g-c1', content: '#46044 WFの通知機能' },
+  { id: 'g-c2', content: '#46045 BP申請機能' },
+  { id: 'g-c3', content: '#46049 保守チケット完了' },
   {
-    id: '2',
-    name: '基本設計',
-    start: '2026-03-05',
-    end: '2026-03-14',
-    progress: 60,
-    dependencies: '1',
+    id: 'g-p2',
+    content: '#46050 別の親チケット',
+    nestedGroups: ['g-c4'],
+    showNested: true,
   },
-  {
-    id: '3',
-    name: '詳細設計',
-    start: '2026-03-10',
-    end: '2026-03-20',
-    progress: 30,
-    dependencies: '2',
-  },
-  {
-    id: '4',
-    name: '実装',
-    start: '2026-03-15',
-    end: '2026-03-31',
-    progress: 10,
-    dependencies: '3',
-  },
-  {
-    id: '5',
-    name: 'テスト',
-    start: '2026-03-25',
-    end: '2026-04-07',
-    progress: 0,
-    dependencies: '4',
-  },
+  { id: 'g-c4', content: '#46051 子チケット' },
+]
+
+export const dummyItems: DataItem[] = [
+  { id: 'i-p1', group: 'g-p1', content: '', start: '2026-03-01', end: '2026-04-07', type: 'range' },
+  { id: 'i-c1', group: 'g-c1', content: '', start: '2026-03-02', end: '2026-03-14', type: 'range' },
+  { id: 'i-c2', group: 'g-c2', content: '', start: '2026-03-02', end: '2026-03-31', type: 'range' },
+  // g-c3 は日付なしのため items に含めない
+  { id: 'i-c4', group: 'g-c4', content: '', start: '2026-03-15', end: '2026-03-31', type: 'range' },
 ]

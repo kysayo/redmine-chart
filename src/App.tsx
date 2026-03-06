@@ -1,5 +1,5 @@
 import GanttChart from './components/GanttChart'
-import { dummyTasks } from './utils/dummyData'
+import { dummyGroups, dummyItems } from './utils/dummyData'
 
 function App() {
   return (
@@ -14,7 +14,7 @@ function App() {
       }}>
         Chart
       </div>
-      <GanttChart tasks={dummyTasks} />
+      <GanttChart groups={dummyGroups} items={dummyItems} />
     </div>
   )
 }
