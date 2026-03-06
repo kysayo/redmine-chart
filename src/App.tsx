@@ -3,8 +3,17 @@ import { dummyTasks } from './utils/dummyData'
 
 function App() {
   return (
-    <div style={{ padding: '16px' }}>
-      <h2 style={{ marginBottom: '12px' }}>ガントチャート（ダミーデータ）</h2>
+    <div style={{ margin: '10px 0' }}>
+      <div style={{
+        background: '#f6f7f8',
+        borderTop: '2px solid #628db6',
+        padding: '6px 8px',
+        marginBottom: '6px',
+        fontWeight: 'bold',
+        fontSize: '0.9em',
+      }}>
+        Chart
+      </div>
       <GanttChart tasks={dummyTasks} />
     </div>
   )
