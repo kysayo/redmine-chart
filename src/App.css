@@ -31,7 +31,7 @@
 #moca-react-chart-root .rc-settings input[type='number'] { width: 64px; }
 
 /* ガント */
-#moca-react-chart-root .rc-scroll { overflow: auto; max-height: 640px; border: 1px solid #ddd; background: #fff; }
+#moca-react-chart-root .rc-scroll { overflow-x: auto; border: 1px solid #ddd; background: #fff; }
 #moca-react-chart-root .rc-inner { position: relative; }
 #moca-react-chart-root .rc-head { position: sticky; top: 0; z-index: 4; display: flex; background: #f3f3f3; border-bottom: 1px solid #ccc; }
 #moca-react-chart-root .rc-left { position: sticky; left: 0; z-index: 3; display: flex; background: #fff; flex: none; border-right: 1px solid #ccc; }
