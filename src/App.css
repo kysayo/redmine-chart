@@ -31,7 +31,7 @@
 #moca-react-chart-root .rc-settings input[type='number'] { width: 64px; }
 
 /* ガント */
-#moca-react-chart-root .rc-scroll { overflow-x: auto; border: 1px solid #ddd; background: #fff; }
+#moca-react-chart-root .rc-scroll { overflow-x: auto; overflow-y: hidden; border: 1px solid #ddd; background: #fff; }
 #moca-react-chart-root .rc-inner { position: relative; }
 #moca-react-chart-root .rc-head { position: sticky; top: 0; z-index: 4; display: flex; background: #f3f3f3; border-bottom: 1px solid #ccc; }
 #moca-react-chart-root .rc-left { position: sticky; left: 0; z-index: 3; display: flex; background: #fff; flex: none; border-right: 1px solid #ccc; }
@@ -42,7 +42,8 @@
   display: flex; align-items: center; flex: none;
 }
 #moca-react-chart-root .rc-body { position: relative; }
-#moca-react-chart-root .rc-row { display: flex; border-bottom: 1px solid #eee; }
+/* border-box にして下線込みで ROW_H(26px) に固定する。ずれると本体の高さを超えて縦スクロールが出る */
+#moca-react-chart-root .rc-row { display: flex; box-sizing: border-box; border-bottom: 1px solid #eee; }
 #moca-react-chart-root .rc-row:hover .rc-left { background: #f0f6ff; }
 #moca-react-chart-root .rc-name a { color: #1a4d8f; text-decoration: none; overflow: hidden; text-overflow: ellipsis; }
 #moca-react-chart-root .rc-name a:hover { text-decoration: underline; }
