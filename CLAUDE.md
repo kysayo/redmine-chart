@@ -109,14 +109,20 @@ npm run lint
 })();
 ```
 
-## デプロイ(次フェーズ・未実施)
+## ホスティング・デプロイ
 
-redmine-graph と同様に Cloudflare Pages(Direct Upload)を使う予定。`dist/` は git 管理外。
+Cloudflare Pages(Direct Upload)で配信。GitHub Actions は使わない。`dist/` は git 管理外。
+
+- **リポジトリ**: https://github.com/kysayo/redmine-chart(公開)
+- **Cloudflare Pages プロジェクト**: `redmine-chart`
+- **本番URL(常に最新)**: `https://redmine-chart.pages.dev/moca-react-chart.iife.js`
+- **デプロイごとの固有URL**: `https://{デプロイID}.redmine-chart.pages.dev/moca-react-chart.iife.js`(View Customize にはこちらを貼る)
 
 ```bash
 npm run build
 npx wrangler pages deploy dist/ --project-name redmine-chart --commit-dirty=true --commit-message='deploy'
+# 出力された固有URLを View Customize の script.src に貼り替える
 ```
 
-- 初回のみ `npx wrangler login`。日本語のコミットメッセージだと wrangler がエラーになるため `--commit-message` が必要。
-- GitHub リポジトリ(`redmine-chart`)は未作成。作成後にここへ URL を追記する。
+- 初回のみ `npx wrangler login`(トークン期限切れのときも)。日本語のコミットメッセージだと wrangler がエラーになるため `--commit-message` が必要。
+- プロジェクト作成時のみ、新しい wrangler が Workers に誘導するため `--force` を使った。プロジェクト作成済みの今は不要。
