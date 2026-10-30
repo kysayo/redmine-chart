@@ -33,7 +33,13 @@
 /* ガント */
 #moca-react-chart-root .rc-scroll { overflow-x: auto; overflow-y: hidden; border: 1px solid #ddd; background: #fff; }
 #moca-react-chart-root .rc-inner { position: relative; }
-#moca-react-chart-root .rc-head { position: sticky; top: 0; z-index: 4; display: flex; background: #f3f3f3; border-bottom: 1px solid #ccc; }
+/* 見出しはページのスクロールに追従させる(GanttChart.tsx が transform を更新)。sticky は横スクロール用コンテナ内だと効かない */
+#moca-react-chart-root .rc-head { position: relative; z-index: 6; display: flex; background: #f3f3f3; border-bottom: 1px solid #ccc; will-change: transform; }
+/* 親階層の追従行。見出しの直下に重ねる */
+#moca-react-chart-root .rc-sticky { position: absolute; top: 0; left: 0; z-index: 5; will-change: transform; box-shadow: 0 2px 3px rgba(0, 0, 0, 0.12); }
+#moca-react-chart-root .rc-sticky-row { background: #f7f9fc; }
+#moca-react-chart-root .rc-sticky-row .rc-left { background: #f7f9fc; }
+#moca-react-chart-root .rc-sticky-svg { display: block; flex: none; background: #f7f9fc; }
 #moca-react-chart-root .rc-left { position: sticky; left: 0; z-index: 3; display: flex; background: #fff; flex: none; border-right: 1px solid #ccc; }
 #moca-react-chart-root .rc-left-head { background: #f3f3f3; font-weight: bold; align-items: center; }
 #moca-react-chart-root .rc-head-svg { display: block; flex: none; }
