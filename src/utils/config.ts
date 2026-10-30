@@ -9,6 +9,7 @@ export function buildDefaultSettings(): ChartSettings {
     columns: ['status', 'assigned_to', 'start_date', 'due_date'],
     statusProgress: {},
     inazuma: { enabled: true, strategy: 'leafOnly', baseDate: '' },
+    range: { mode: 'auto', beforeDays: 30, afterDays: 90, startDate: '', endDate: '' },
     scale: 'day',
   }
 }
@@ -19,6 +20,7 @@ export function mergePreset(base: ChartSettings, preset: Partial<PresetSettings>
     ...base,
     ...preset,
     inazuma: { ...base.inazuma, ...(preset.inazuma ?? {}) },
+    range: { ...base.range, ...(preset.range ?? {}) },
     version: 1,
     appliedTeamPreset: presetName ?? base.appliedTeamPreset,
   }

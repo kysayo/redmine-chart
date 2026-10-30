@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import type { FieldDef, GanttRow, InazumaSettings, TimelineScale } from '../types'
-import { dayOfWeek, dayParts, formatDay, monthStart, todayDay } from '../utils/dateUtils'
+import type { FieldDef, GanttRow, InazumaSettings, RangeSettings, TimelineScale } from '../types'
+import { dayOfWeek, dayParts, formatDay, monthStart, parseDay, todayDay } from '../utils/dateUtils'
 import { getFieldValue } from '../utils/fields'
 import { buildInazumaPolyline } from '../utils/inazuma/compute'
 import { STRATEGIES } from '../utils/inazuma/strategies'
@@ -17,6 +17,7 @@ interface Props {
   columns: string[]
   scale: TimelineScale
   inazuma: InazumaSettings
+  range: RangeSettings
   baseDay: number
   onToggle: (nodeId: string) => void
 }
@@ -27,17 +28,35 @@ interface MonthSeg {
   label: string
 }
 
-function computeRange(rows: GanttRow[], extraDays: number[]): { minDay: number; maxDay: number } {
-  const days = [...extraDays]
+/** 表示する日付範囲(day number)を決める。範囲外のバーは見切れる */
+function computeRange(
+  rows: GanttRow[],
+  range: RangeSettings,
+  today: number,
+  baseDay: number,
+): { minDay: number; maxDay: number } {
+  if (range.mode === 'relative') {
+    const before = Math.max(0, Math.floor(range.beforeDays))
+    const after = Math.max(0, Math.floor(range.afterDays))
+    return { minDay: today - before, maxDay: today + after }
+  }
+
+  // 自動: チケットの日付 + 今日 + 基準日が収まる範囲。週の頭(月曜)に揃える
+  const days = [today, baseDay]
   for (const r of rows) {
     if (r.node.start != null) days.push(r.node.start)
     if (r.node.end != null) days.push(r.node.end)
   }
   const lo = Math.min(...days) - 7
-  const hi = Math.max(...days) + 14
-  // 週の頭(月曜)に揃える
-  const minDay = lo - ((dayOfWeek(lo) + 6) % 7)
-  return { minDay, maxDay: hi }
+  const auto = { minDay: lo - ((dayOfWeek(lo) + 6) % 7), maxDay: Math.max(...days) + 14 }
+
+  if (range.mode === 'fixed') {
+    // 空欄(または不正)の側は自動と同じ
+    const minDay = parseDay(range.startDate) ?? auto.minDay
+    const maxDay = parseDay(range.endDate) ?? auto.maxDay
+    return maxDay >= minDay ? { minDay, maxDay } : auto
+  }
+  return auto
 }
 
 function buildMonthSegments(minDay: number, maxDay: number): MonthSeg[] {
@@ -52,7 +71,7 @@ function buildMonthSegments(minDay: number, maxDay: number): MonthSeg[] {
   return segs
 }
 
-export default function GanttChart({ rows, fields, columns, scale, inazuma, baseDay, onToggle }: Props) {
+export default function GanttChart({ rows, fields, columns, scale, inazuma, range, baseDay, onToggle }: Props) {
   const px = PX_PER_DAY[scale]
   const today = todayDay()
 
@@ -62,7 +81,10 @@ export default function GanttChart({ rows, fields, columns, scale, inazuma, base
   // 画面上部に追従させる親行(rows のインデックス。上位の階層から順)
   const [stickyIdx, setStickyIdx] = useState<number[]>([])
 
-  const { minDay, maxDay } = useMemo(() => computeRange(rows, [today, baseDay]), [rows, today, baseDay])
+  const { minDay, maxDay } = useMemo(
+    () => computeRange(rows, range, today, baseDay),
+    [rows, range, today, baseDay],
+  )
   const monthSegs = useMemo(() => buildMonthSegments(minDay, maxDay), [minDay, maxDay])
 
   const fieldName = (key: string) => fields.find(f => f.key === key)?.name ?? key

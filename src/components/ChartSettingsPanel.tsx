@@ -5,6 +5,7 @@ import type {
   FieldDef,
   GroupingDef,
   HierarchyLevel,
+  RangeSettings,
   RedmineIssue,
   TeamPreset,
   TimelineScale,
@@ -268,6 +269,54 @@ export default function ChartSettingsPanel({
           />
         </label>
         <span className="rc-note">(空欄=今日)</span>
+      </div>
+      <div className="rc-line">
+        <label>
+          表示範囲:{' '}
+          <select
+            value={settings.range.mode}
+            onChange={e => set({ range: { ...settings.range, mode: e.target.value as RangeSettings['mode'] } })}
+          >
+            <option value="auto">自動(チケットの日付に合わせる)</option>
+            <option value="relative">今日からの相対</option>
+            <option value="fixed">日付を指定</option>
+          </select>
+        </label>
+        {settings.range.mode === 'relative' && (
+          <>
+            <span>今日の</span>
+            <input
+              type="number"
+              min={0}
+              value={settings.range.beforeDays}
+              onChange={e => set({ range: { ...settings.range, beforeDays: Number(e.target.value) } })}
+            />
+            <span>日前から</span>
+            <input
+              type="number"
+              min={0}
+              value={settings.range.afterDays}
+              onChange={e => set({ range: { ...settings.range, afterDays: Number(e.target.value) } })}
+            />
+            <span>日後まで</span>
+          </>
+        )}
+        {settings.range.mode === 'fixed' && (
+          <>
+            <input
+              type="date"
+              value={settings.range.startDate}
+              onChange={e => set({ range: { ...settings.range, startDate: e.target.value } })}
+            />
+            <span>〜</span>
+            <input
+              type="date"
+              value={settings.range.endDate}
+              onChange={e => set({ range: { ...settings.range, endDate: e.target.value } })}
+            />
+            <span className="rc-note">(空欄の側は自動)</span>
+          </>
+        )}
       </div>
       <div className="rc-line">
         <label>

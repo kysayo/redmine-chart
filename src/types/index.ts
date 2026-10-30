@@ -78,6 +78,18 @@ export interface InazumaSettings {
   baseDate: string
 }
 
+/** 表示する日付範囲。auto=チケットの日付に合わせる / relative=今日からの相対 / fixed=日付指定 */
+export interface RangeSettings {
+  mode: 'auto' | 'relative' | 'fixed'
+  /** relative: 今日の何日前から表示するか */
+  beforeDays: number
+  /** relative: 今日の何日後まで表示するか */
+  afterDays: number
+  /** fixed: YYYY-MM-DD。空欄の側は auto と同じ(チケットの日付に合わせる) */
+  startDate: string
+  endDate: string
+}
+
 export interface ChartSettings {
   version: 1
   levels: HierarchyLevel[]
@@ -87,6 +99,7 @@ export interface ChartSettings {
   /** ステータス名 → 進捗率(0-100)。未設定のステータスは 完了=100 / それ以外=done_ratio */
   statusProgress: Record<string, number>
   inazuma: InazumaSettings
+  range: RangeSettings
   scale: TimelineScale
   /** 最後に適用したチームプリセット名(表示用) */
   appliedTeamPreset?: string

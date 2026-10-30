@@ -222,6 +222,7 @@ export default function App({ container }: Props) {
           columns={settings.columns}
           scale={settings.scale}
           inazuma={settings.inazuma}
+          range={settings.range}
           baseDay={baseDay}
           onToggle={toggleNode}
         />
