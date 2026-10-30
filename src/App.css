@@ -1,0 +1,74 @@
+/* Redmine のスタイルと衝突しないよう、すべて #moca-react-chart-root 配下 + rc- 接頭辞に限定する */
+#moca-react-chart-root .rc-root { font-size: 12px; color: #333; }
+#moca-react-chart-root .rc-toolbar,
+#moca-react-chart-root .rc-filters { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin: 6px 0; }
+#moca-react-chart-root .rc-label { font-weight: bold; }
+#moca-react-chart-root .rc-note { color: #777; font-size: 11px; }
+#moca-react-chart-root .rc-warn { color: #b45309; font-size: 11px; }
+#moca-react-chart-root .rc-error { color: #c00; }
+#moca-react-chart-root .rc-btn {
+  padding: 2px 8px; border: 1px solid #bbb; border-radius: 3px; background: #f6f6f6; cursor: pointer; font-size: 12px;
+}
+#moca-react-chart-root .rc-btn:hover { background: #eaeaea; }
+#moca-react-chart-root .rc-btn-on { background: #d6e6fa; border-color: #6a9bd8; }
+
+/* フィルタ */
+#moca-react-chart-root .rc-filter { display: flex; align-items: center; gap: 4px; }
+#moca-react-chart-root .rc-filter-field { width: 160px; }
+#moca-react-chart-root .rc-filter-value { min-width: 220px; }
+
+/* 設定パネル */
+#moca-react-chart-root .rc-settings { border: 1px solid #ddd; border-radius: 4px; padding: 8px 12px; margin: 6px 0; background: #fafafa; }
+#moca-react-chart-root .rc-sec { margin-bottom: 12px; }
+#moca-react-chart-root .rc-sec h4 { margin: 0 0 6px; font-size: 13px; border-bottom: 1px solid #ddd; padding-bottom: 2px; }
+#moca-react-chart-root .rc-line { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin: 4px 0; }
+#moca-react-chart-root .rc-line.rc-top { align-items: flex-start; }
+#moca-react-chart-root .rc-grow { flex: 1 1 200px; min-width: 160px; }
+#moca-react-chart-root .rc-num { display: inline-block; width: 18px; text-align: center; color: #888; }
+#moca-react-chart-root .rc-card { border: 1px solid #ddd; background: #fff; border-radius: 4px; padding: 6px 8px; margin: 6px 0; }
+#moca-react-chart-root .rc-grid-2 { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 0 16px; }
+#moca-react-chart-root .rc-json { width: 100%; font-family: monospace; font-size: 11px; box-sizing: border-box; }
+#moca-react-chart-root .rc-settings input[type='number'] { width: 64px; }
+
+/* ガント */
+#moca-react-chart-root .rc-scroll { overflow: auto; max-height: 640px; border: 1px solid #ddd; background: #fff; }
+#moca-react-chart-root .rc-inner { position: relative; }
+#moca-react-chart-root .rc-head { position: sticky; top: 0; z-index: 4; display: flex; background: #f3f3f3; border-bottom: 1px solid #ccc; }
+#moca-react-chart-root .rc-left { position: sticky; left: 0; z-index: 3; display: flex; background: #fff; flex: none; border-right: 1px solid #ccc; }
+#moca-react-chart-root .rc-left-head { background: #f3f3f3; font-weight: bold; align-items: center; }
+#moca-react-chart-root .rc-head-svg { display: block; flex: none; }
+#moca-react-chart-root .rc-cell {
+  box-sizing: border-box; padding: 0 4px; overflow: hidden; white-space: nowrap; text-overflow: ellipsis;
+  display: flex; align-items: center; flex: none;
+}
+#moca-react-chart-root .rc-body { position: relative; }
+#moca-react-chart-root .rc-row { display: flex; border-bottom: 1px solid #eee; }
+#moca-react-chart-root .rc-row:hover .rc-left { background: #f0f6ff; }
+#moca-react-chart-root .rc-name a { color: #1a4d8f; text-decoration: none; overflow: hidden; text-overflow: ellipsis; }
+#moca-react-chart-root .rc-name a:hover { text-decoration: underline; }
+#moca-react-chart-root .rc-id { color: #888; }
+#moca-react-chart-root .rc-group-label { font-weight: bold; overflow: hidden; text-overflow: ellipsis; }
+#moca-react-chart-root .rc-meta { font-weight: normal; color: #888; font-size: 11px; }
+#moca-react-chart-root .rc-toggle { border: none; background: none; cursor: pointer; padding: 0; width: 16px; font-size: 9px; color: #666; flex: none; }
+#moca-react-chart-root .rc-toggle-space { display: inline-block; width: 16px; flex: none; }
+#moca-react-chart-root .rc-overlay { position: absolute; top: 0; z-index: 1; pointer-events: none; }
+#moca-react-chart-root .rc-bar-wrap { pointer-events: all; }
+
+/* SVG */
+#moca-react-chart-root .rc-head-month { fill: #e8e8e8; stroke: #ccc; stroke-width: 1; }
+#moca-react-chart-root .rc-head-text { font-size: 10px; fill: #444; }
+#moca-react-chart-root .rc-head-day { fill: #666; }
+#moca-react-chart-root .rc-sat { fill: #2a6ac8; }
+#moca-react-chart-root .rc-sun { fill: #d33; }
+#moca-react-chart-root .rc-weekend { fill: #f4f4f4; }
+#moca-react-chart-root .rc-grid { stroke: #ddd; stroke-width: 1; }
+#moca-react-chart-root .rc-grid-h { stroke: #eee; stroke-width: 1; }
+#moca-react-chart-root .rc-today { stroke: #f4a0a0; stroke-width: 1; }
+#moca-react-chart-root .rc-base { stroke: #d00; stroke-width: 1; stroke-dasharray: 4 3; }
+#moca-react-chart-root .rc-inazuma { fill: none; stroke: #d00; stroke-width: 1.6; stroke-linejoin: round; }
+#moca-react-chart-root .rc-bar.rc-bar-bg { fill: #cfe0f5; stroke: #8fb2e0; }
+#moca-react-chart-root .rc-bar.rc-bar-fill { fill: #4f8fdc; }
+#moca-react-chart-root .rc-bar-parent.rc-bar-bg { fill: #c9d3e0; stroke: #7d8da5; }
+#moca-react-chart-root .rc-bar-parent.rc-bar-fill { fill: #566b8c; }
+#moca-react-chart-root .rc-bar-group.rc-bar-bg { fill: #ddd; stroke: #999; }
+#moca-react-chart-root .rc-bar-group.rc-bar-fill { fill: #777; }
