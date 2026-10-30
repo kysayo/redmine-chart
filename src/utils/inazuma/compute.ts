@@ -17,11 +17,15 @@ export function buildInazumaPolyline(
   rowCenterY: (rowIndex: number) => number,
   topY: number,
   bottomY: number,
+  minX: number,
+  maxX: number,
 ): string {
   if (points.length === 0) return ''
   const coords: string[] = [`${baseX},${topY}`]
   for (const p of points) {
-    coords.push(`${baseX + p.offsetDays * pxPerDay},${rowCenterY(p.rowIndex)}`)
+    // 期間が長いチケットは頂点が画面の遥か外に飛ぶので、描画範囲の端に丸める
+    const px = Math.min(maxX, Math.max(minX, baseX + p.offsetDays * pxPerDay))
+    coords.push(`${px},${rowCenterY(p.rowIndex)}`)
   }
   coords.push(`${baseX},${bottomY}`)
   return coords.join(' ')

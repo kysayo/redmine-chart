@@ -106,8 +106,10 @@ export default function GanttChart({ rows, fields, columns, scale, inazuma, rang
       i => i * ROW_H + ROW_H / 2,
       0,
       bodyH,
+      0,
+      timeW,
     )
-  }, [inazuma, rows, baseDay, minDay, px, bodyH])
+  }, [inazuma, rows, baseDay, minDay, px, bodyH, timeW])
 
   // 各行の親行のインデックス(深さの連なりから求める)。-1 は親なし
   const parentIdx = useMemo(() => {

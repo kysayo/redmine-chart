@@ -219,7 +219,7 @@ export default function ChartSettingsPanel({
   const progressEditor = (
     <section className="rc-sec">
       <h4>ステータス別の進捗率(イナズマ線・バーの塗りに使用)</h4>
-      <p className="rc-note">空欄のステータスは「終了済みなら100%、それ以外はチケットの進捗率」になります。</p>
+      <p className="rc-note">空欄のステータスは「終了済みなら100%、それ以外は0%」になります(チケットの「進捗率」欄は使いません)。</p>
       <div className="rc-grid-2">
         {statusNames.map(name => (
           <label key={name} className="rc-line">
