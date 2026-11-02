@@ -9,7 +9,8 @@ export interface RedmineIssue {
   id: number
   subject: string
   project?: RedmineRef
-  status: RedmineRef
+  /** is_closed は Redmine のバージョンによっては返らない */
+  status: RedmineRef & { is_closed?: boolean }
   tracker: RedmineRef
   priority?: RedmineRef
   assigned_to?: RedmineRef
