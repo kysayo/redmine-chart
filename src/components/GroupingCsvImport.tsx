@@ -7,6 +7,8 @@ interface Props {
   /** グルーピングの対象にできる項目(リスト型) */
   listFields: FieldDef[]
   issues: RedmineIssue[]
+  /** 値の表示名(ユーザー名など)の読み込み回数。変わったら突き合わせを作り直す */
+  labelsVersion: number
   groupings: GroupingDef[]
   onApply: (next: GroupingDef[]) => void
 }
@@ -17,7 +19,7 @@ const uid = () => `gr-${Date.now().toString(36)}-${seq++}`
 /** 未分類の値のまとめ先。「その他」という名前のグループが CSV にあっても混ざらないようにする */
 const OTHER_LABEL = '(未分類)'
 
-export default function GroupingCsvImport({ listFields, issues, groupings, onApply }: Props) {
+export default function GroupingCsvImport({ listFields, issues, labelsVersion, groupings, onApply }: Props) {
   const inputRef = useRef<HTMLInputElement>(null)
   const [fileName, setFileName] = useState('')
   const [result, setResult] = useState<CsvGroupingResult | null>(null)
@@ -58,7 +60,8 @@ export default function GroupingCsvImport({ listFields, issues, groupings, onApp
       ticketOnly: ticketValues.filter(v => !csvValues.has(v)),
       csvOnly: Array.from(csvValues).filter(v => !ticketSet.has(v)).length,
     }
-  }, [result, fieldKey, issues])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [result, fieldKey, issues, labelsVersion])
 
   const close = () => {
     setResult(null)

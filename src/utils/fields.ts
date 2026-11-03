@@ -1,5 +1,6 @@
 import type { FieldDef, FieldKind, RedmineIssue } from '../types'
 import { isoToLocalDate } from './dateUtils'
+import { getValueLabel, isCustomFieldKey } from './valueLabels'
 
 export const UNSET_LABEL = '(未設定)'
 
@@ -26,10 +27,6 @@ const STANDARD_FIELDS: FieldDef[] = [
 ]
 
 const STANDARD_BY_KEY = new Map(STANDARD_FIELDS.map(f => [f.key, f]))
-
-function isCustomFieldKey(key: string): boolean {
-  return /^cf_\d+$/.test(key)
-}
 
 function kindOf(key: string): FieldKind {
   return STANDARD_BY_KEY.get(key)?.kind ?? 'list'
@@ -125,7 +122,8 @@ export function getFieldValues(issue: RedmineIssue, key: string): string[] {
     const cf = issue.custom_fields?.find(c => c.id === id)
     if (!cf || cf.value == null) return []
     const vals = Array.isArray(cf.value) ? cf.value : [cf.value]
-    return vals.filter(v => v !== '')
+    // ユーザー型などは id が入っているので、表示名に直す
+    return vals.filter(v => v !== '').map(v => getValueLabel(key, v))
   }
   return []
 }

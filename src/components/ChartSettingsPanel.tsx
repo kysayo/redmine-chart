@@ -23,6 +23,8 @@ interface Props {
   onChange: (next: ChartSettings) => void
   fields: FieldDef[]
   issues: RedmineIssue[]
+  /** 値の表示名(ユーザー名など)の読み込み回数。変わったら値の一覧を作り直す */
+  labelsVersion: number
   statusNames: string[]
   teamPresets: TeamPreset[]
   onApplyTeamPreset: (preset: TeamPreset) => void
@@ -55,6 +57,7 @@ export default function ChartSettingsPanel({
   onChange,
   fields,
   issues,
+  labelsVersion,
   statusNames,
   teamPresets,
   onApplyTeamPreset,
@@ -150,6 +153,7 @@ export default function ChartSettingsPanel({
           grouping={g}
           listFieldOpts={listFieldOpts}
           issues={issues}
+          labelsVersion={labelsVersion}
           fieldName={fieldName}
           onChange={patch => setGrouping(g.id, patch)}
           onDelete={() =>
@@ -166,6 +170,7 @@ export default function ChartSettingsPanel({
       <GroupingCsvImport
         listFields={fields.filter(f => f.kind === 'list')}
         issues={issues}
+        labelsVersion={labelsVersion}
         groupings={settings.groupings}
         onApply={next => set({ groupings: next })}
       />
@@ -625,18 +630,20 @@ interface GroupingEditorProps {
   grouping: GroupingDef
   listFieldOpts: Opt[]
   issues: RedmineIssue[]
+  labelsVersion: number
   fieldName: (key: string) => string
   onChange: (patch: Partial<GroupingDef>) => void
   onDelete: () => void
 }
 
-function GroupingEditor({ grouping, listFieldOpts, issues, fieldName, onChange, onDelete }: GroupingEditorProps) {
+function GroupingEditor({ grouping, listFieldOpts, issues, labelsVersion, fieldName, onChange, onDelete }: GroupingEditorProps) {
   // 取得済みチケットに現れる値 + すでに割り当て済みの値(今は現れない値も保持するため)
   const pool = useMemo(() => {
     const set = new Set(collectDistinctValues(issues, grouping.field))
     grouping.groups.forEach(g => g.values.forEach(v => set.add(v)))
     return Array.from(set).sort((a, b) => a.localeCompare(b, 'ja', { numeric: true }))
-  }, [issues, grouping.field, grouping.groups])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [issues, labelsVersion, grouping.field, grouping.groups])
 
   const assigned = new Set(grouping.groups.flatMap(g => g.values))
   const unassignedCount = pool.filter(v => !assigned.has(v)).length

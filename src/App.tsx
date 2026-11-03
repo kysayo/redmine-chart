@@ -13,6 +13,7 @@ import { fetchAllIssues, getStatusNamesFromPage } from './utils/redmineApi'
 import { loadSettings, saveSettings } from './utils/storage'
 import { resolveRowStyle } from './utils/rowStyle'
 import { getProjectId } from './utils/urlParser'
+import { isCustomFieldKey, loadLabelsFromPage, loadRemoteLabels } from './utils/valueLabels'
 import './App.css'
 
 interface Props {
@@ -43,6 +44,11 @@ export default function App({ container }: Props) {
   const teamPresets = useMemo(() => readTeamPresets(container), [container])
   const [settings, setSettings] = useState<ChartSettings>(() => initSettings(teamPresets))
   const [showSettings, setShowSettings] = useState(false)
+  // 値の表示名の読み込み回数。ページに埋め込まれた選択肢は、最初の描画の前に同期で登録しておく
+  const [labelsVersion, setLabelsVersion] = useState(() => {
+    loadLabelsFromPage()
+    return 0
+  })
   const [viewFilters, setViewFilters] = useState<ViewFilter[]>([])
   const [collapsedIds, setCollapsedIds] = useState<Set<string>>(new Set())
 
@@ -143,6 +149,27 @@ export default function App({ container }: Props) {
     handleSettingsChange(import.meta.env.DEV ? buildMockSettings() : buildDefaultSettings())
   }, [handleSettingsChange])
 
+  // ユーザー型などのカスタムフィールドの id → 表示名。remote の選択肢は取得後に再計算する
+  const usedFieldKeys = useMemo(() => {
+    const keys = new Set<string>(settings.columns.map(c => c.key))
+    settings.levels.forEach(l => l.type === 'field' && keys.add(l.field))
+    settings.groupings.forEach(g => keys.add(g.field))
+    viewFilters.forEach(f => f.field && keys.add(f.field))
+    if (settings.endDate.field) keys.add(settings.endDate.field)
+    return Array.from(keys).filter(isCustomFieldKey).sort().join(',')
+  }, [settings.columns, settings.levels, settings.groupings, settings.endDate.field, viewFilters])
+
+  useEffect(() => {
+    if (!shouldFetch || usedFieldKeys === '') return
+    let cancelled = false
+    void loadRemoteLabels(usedFieldKeys.split(','), apiKey).then(changed => {
+      if (changed && !cancelled) setLabelsVersion(v => v + 1)
+    })
+    return () => {
+      cancelled = true
+    }
+  }, [usedFieldKeys, apiKey, shouldFetch])
+
   const fields = useMemo(
     () => getAvailableFields(import.meta.env.DEV ? MOCK_EXTRA_FIELDS : []),
     // 取得開始後は一覧ページの DOM が確定しているので、そのタイミングで読み直す
@@ -159,12 +186,18 @@ export default function App({ container }: Props) {
     return Array.from(names)
   }, [allIssues, settings.statusProgress])
 
+  // labelsVersion: 値の表示名(ユーザー名など)が読み込まれたら、絞り込み・階層を作り直す
   const filteredIssues = useMemo(
     () => applyViewFilters(allIssues, viewFilters, fields),
-    [allIssues, viewFilters, fields],
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [allIssues, viewFilters, fields, labelsVersion],
   )
 
-  const tree = useMemo(() => buildTree(filteredIssues, settings), [filteredIssues, settings])
+  const tree = useMemo(
+    () => buildTree(filteredIssues, settings),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [filteredIssues, settings, labelsVersion],
+  )
   const rows = useMemo(() => flattenTree(tree, collapsedIds), [tree, collapsedIds])
   const baseDay = resolveBaseDay(settings.inazuma.baseDate)
 
@@ -203,6 +236,7 @@ export default function App({ container }: Props) {
           onChange={handleSettingsChange}
           fields={fields}
           issues={allIssues}
+          labelsVersion={labelsVersion}
           statusNames={statusNames}
           teamPresets={teamPresets}
           onApplyTeamPreset={handleApplyTeamPreset}
