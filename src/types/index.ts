@@ -11,6 +11,7 @@ export interface RedmineIssue {
   project?: RedmineRef
   /** is_closed は Redmine のバージョンによっては返らない */
   status: RedmineRef & { is_closed?: boolean }
+
   tracker: RedmineRef
   priority?: RedmineRef
   assigned_to?: RedmineRef
@@ -91,6 +92,29 @@ export interface RangeSettings {
   endDate: string
 }
 
+/**
+ * 行の色ルール。上から順に評価し、最初に合致したルールを適用する。
+ * useClosed が true のときは statuses ではなく、ステータスの「終了」属性(is_closed)で判定する。
+ */
+export interface RowColorRule {
+  id: string
+  useClosed: boolean
+  /** 対象のステータス名(複数可)。useClosed のときは無視 */
+  statuses: string[]
+  /** 行の背景色(#rrggbb) */
+  bg: string
+  /** 文字色(#rrggbb)。空文字なら変更しない */
+  textColor: string
+}
+
+/** タスクの終了日(バーの右端)に使う項目 */
+export interface EndDateSettings {
+  /** 日付項目のキー。空文字なら期日(due_date) */
+  field: string
+  /** 終了日が無い行を赤くする */
+  highlightMissing: boolean
+}
+
 export interface ChartSettings {
   version: 1
   levels: HierarchyLevel[]
@@ -101,6 +125,8 @@ export interface ChartSettings {
   statusProgress: Record<string, number>
   inazuma: InazumaSettings
   range: RangeSettings
+  rowColors: RowColorRule[]
+  endDate: EndDateSettings
   scale: TimelineScale
   /** 最後に適用したチームプリセット名(表示用) */
   appliedTeamPreset?: string
@@ -141,6 +167,8 @@ export interface TreeNode {
   progress: number
   /** 配下のチケット数(グループのみ意味を持つ) */
   issueCount: number
+  /** チケット自身に終了日(設定の終了日項目の値)が無い */
+  endMissing?: boolean
 }
 
 export interface GanttRow {

@@ -11,6 +11,7 @@ import { resolveBaseDay } from './utils/inazuma/compute'
 import { buildMockIssues, buildMockSettings, MOCK_EXTRA_FIELDS, MOCK_STATUS_NAMES } from './utils/mockIssues'
 import { fetchAllIssues, getStatusNamesFromPage } from './utils/redmineApi'
 import { loadSettings, saveSettings } from './utils/storage'
+import { resolveRowStyle } from './utils/rowStyle'
 import { getProjectId } from './utils/urlParser'
 import './App.css'
 
@@ -224,6 +225,7 @@ export default function App({ container }: Props) {
           inazuma={settings.inazuma}
           range={settings.range}
           baseDay={baseDay}
+          rowStyle={row => resolveRowStyle(row.node, settings)}
           onToggle={toggleNode}
         />
       )}

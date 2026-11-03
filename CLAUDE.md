@@ -56,6 +56,8 @@ npm run lint
 - **グルーピングの CSV 取り込み**: 設定画面の「CSV から取り込み」。1列目=項目の値、2列目以降=グルーピング(ヘッダー=名前、セル=グループ名)。UTF-8 / Shift-JIS 自動判別。列ごとに1グルーピングを作り、同名・同項目は置き換える。未登録の値は「(未分類)」に入る。取り込み後の階層(どの順でグルーピングを使うか、子チケットをどこに混ぜるか)は手動で設定する。処理は `utils/csvGrouping.ts` と `components/GroupingCsvImport.tsx`。
 - **進捗率**: `statusProgress`(ステータス名 → %)。未割当は ステータスが終了系(`status.is_closed`)=100 / それ以外=0。チケットの done_ratio は使わず、`closed_on` も使わない(再オープンしても残るため)。
 - **イナズマ線**: 基準日(既定=今日)の予定位置と実績位置(進捗率×期間)の差を行ごとに結ぶ。対象行の選び方は `inazuma/strategies.ts` の戦略で差し替え可能。現在は `leafOnly` のみ。戦略を足す場合は `STRATEGIES` に登録し、`InazumaStrategyId`(types)を増やす。
+- **行の色**: `rowColors[]`(ルール: 完了扱い or ステータス名の複数指定 + 背景色 + 任意の文字色)。上から順に最初に合致したものを適用。「完了扱い」はステータス名ではなく `status.is_closed` で判定する(Redmine が返さない版では合致しない)。判定は `utils/rowStyle.ts`。
+- **タスクの終了日**: `endDate.field`(日付項目。空=期日 due_date)がバーの右端。無ければ開始日で代用。`endDate.highlightMissing` で、終了日が無い行を赤にする(行の色ルールが優先)。日付のカスタムフィールドは `availableFilters` の型から判定する。
 - **表示範囲**: `range`(`auto`=チケットの日付に合わせる / `relative`=今日の何日前〜何日後 / `fixed`=開始日〜終了日、空欄の側は auto)。範囲外のバーは見切れる。
 - **規模**: 数百件想定のため仮想スクロールなし。重ければ追加する。
 

@@ -35,6 +35,29 @@ function kindOf(key: string): FieldKind {
   return STANDARD_BY_KEY.get(key)?.kind ?? 'list'
 }
 
+/** Redmine のフィルタ種別 → 種別。カスタムフィールドの型判定に使う。不明なものは list */
+function kindFromFilterType(type: unknown): FieldKind {
+  switch (type) {
+    case 'date':
+    case 'date_past':
+      return 'date'
+    case 'string':
+    case 'text':
+      return 'string'
+    case 'integer':
+    case 'float':
+      return 'number'
+    default:
+      return 'list'
+  }
+}
+
+function customFieldKind(key: string): FieldKind {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const af = (window as any).availableFilters
+  return kindFromFilterType(af?.[key]?.type)
+}
+
 /**
  * 利用可能なフィールド(列)の一覧を返す。
  * チケット一覧ページの「利用可能な列」「選択された列」から取得し、取得できない場合(開発環境)は標準列のみ。
@@ -65,7 +88,7 @@ export function getAvailableFields(extra: FieldDef[] = []): FieldDef[] {
     if (STANDARD_BY_KEY.has(key)) {
       push({ key, name, kind: kindOf(key) })
     } else if (isCustomFieldKey(key)) {
-      push({ key, name, kind: 'list' })
+      push({ key, name, kind: customFieldKind(key) })
     }
   })
   return result

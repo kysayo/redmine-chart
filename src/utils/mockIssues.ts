@@ -65,7 +65,11 @@ export function buildMockIssues(): RedmineIssue[] {
       subject,
       project: { id: 1, name: 'デモ案件' },
       tracker: { id: 1, name: tracker },
-      status: { id: MOCK_STATUS_NAMES.indexOf(statusName) + 1, name: statusName },
+      status: {
+        id: MOCK_STATUS_NAMES.indexOf(statusName) + 1,
+        name: statusName,
+        is_closed: statusName === 'Closed' || statusName === 'Dropped',
+      },
       priority: { id: 2, name: '通常' },
       assigned_to: { id: PEOPLE.indexOf(person) + 1, name: person },
       author: { id: 1, name: '管理者' },

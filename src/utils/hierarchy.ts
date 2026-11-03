@@ -1,5 +1,6 @@
 import type { ChartSettings, GanttRow, GroupingDef, HierarchyLevel, RedmineIssue, TreeNode } from '../types'
 import { getFieldValue, UNSET_LABEL } from './fields'
+
 import { parseDay } from './dateUtils'
 import { getIssueProgress } from './progress'
 
@@ -28,9 +29,12 @@ interface BuildContext {
 }
 
 function issueNode(issue: RedmineIssue, depth: number, id: string, children: TreeNode[], ctx: BuildContext): TreeNode {
+  // 終了日は設定の日付項目(既定は期日)。無ければ開始日で代用する
+  const endDay = parseDay(getFieldValue(issue, ctx.settings.endDate.field || 'due_date'))
+  const startDay = parseDay(issue.start_date)
   const own = {
-    start: parseDay(issue.start_date) ?? parseDay(issue.due_date),
-    end: parseDay(issue.due_date) ?? parseDay(issue.start_date),
+    start: startDay ?? endDay,
+    end: endDay ?? startDay,
   }
   const node: TreeNode = {
     id,
@@ -43,6 +47,7 @@ function issueNode(issue: RedmineIssue, depth: number, id: string, children: Tre
     end: own.end,
     progress: getIssueProgress(issue, ctx.settings.statusProgress),
     issueCount: 1 + children.reduce((s, c) => s + c.issueCount, 0),
+    endMissing: endDay == null,
   }
   // 自身に日付が無い場合は子の範囲で補う
   if (node.start == null || node.end == null) {

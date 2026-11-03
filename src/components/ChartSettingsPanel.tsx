@@ -7,6 +7,7 @@ import type {
   HierarchyLevel,
   RangeSettings,
   RedmineIssue,
+  RowColorRule,
   TeamPreset,
   TimelineScale,
 } from '../types'
@@ -246,6 +247,114 @@ export default function ChartSettingsPanel({
     </section>
   )
 
+  // ===== 行の色 =====
+  const statusOpts: Opt[] = statusNames.map(n => ({ value: n, label: n }))
+  const setRule = (index: number, patch: Partial<RowColorRule>) =>
+    set({ rowColors: settings.rowColors.map((r, i) => (i === index ? { ...r, ...patch } : r)) })
+
+  const rowColorEditor = (
+    <section className="rc-sec">
+      <h4>行の色(ステータス別)</h4>
+      <p className="rc-note">
+        上のルールから順に判定し、最初に合致したものを適用します。「完了扱い」にチェックを入れると、ステータス名ではなく、
+        ステータスの「終了」属性(is_closed)で判定します。
+      </p>
+      {settings.rowColors.map((rule, i) => (
+        <div key={rule.id} className="rc-line rc-top">
+          <span className="rc-num">{i + 1}</span>
+          <label>
+            <input
+              type="checkbox"
+              checked={rule.useClosed}
+              onChange={e => setRule(i, { useClosed: e.target.checked })}
+            />{' '}
+            完了扱い
+          </label>
+          <div className="rc-grow">
+            <Select<Opt, true>
+              isMulti
+              isDisabled={rule.useClosed}
+              value={rule.statuses.map(s => ({ value: s, label: s }))}
+              options={statusOpts}
+              placeholder={rule.useClosed ? '(「終了」属性のステータスすべて)' : 'ステータスを選択(複数可)…'}
+              closeMenuOnSelect={false}
+              onChange={opts => setRule(i, { statuses: opts.map(o => o.value) })}
+              {...portal}
+            />
+          </div>
+          <label>
+            背景色 <input type="color" value={rule.bg} onChange={e => setRule(i, { bg: e.target.value })} />
+          </label>
+          <label>
+            <input
+              type="checkbox"
+              checked={rule.textColor !== ''}
+              onChange={e => setRule(i, { textColor: e.target.checked ? '#888888' : '' })}
+            />{' '}
+            文字色{' '}
+            <input
+              type="color"
+              disabled={rule.textColor === ''}
+              value={rule.textColor || '#888888'}
+              onChange={e => setRule(i, { textColor: e.target.value })}
+            />
+          </label>
+          <button type="button" className="rc-btn" onClick={() => set({ rowColors: move(settings.rowColors, i, -1) })}>↑</button>
+          <button type="button" className="rc-btn" onClick={() => set({ rowColors: move(settings.rowColors, i, 1) })}>↓</button>
+          <button type="button" className="rc-btn" onClick={() => set({ rowColors: settings.rowColors.filter((_, j) => j !== i) })}>✕</button>
+        </div>
+      ))}
+      <button
+        type="button"
+        className="rc-btn"
+        onClick={() =>
+          set({
+            rowColors: [
+              ...settings.rowColors,
+              { id: uid('rc'), useClosed: true, statuses: [], bg: '#999999', textColor: '#888888' },
+            ],
+          })
+        }
+      >
+        ＋ ルールを追加
+      </button>
+    </section>
+  )
+
+  // ===== タスクの終了日 =====
+  const dateFieldOpts = fields.filter(f => f.kind === 'date' && f.key !== 'due_date')
+  const endDateEditor = (
+    <section className="rc-sec">
+      <h4>タスクの終了日</h4>
+      <div className="rc-line">
+        <label>
+          終了日に使う項目:{' '}
+          <select
+            value={settings.endDate.field}
+            onChange={e => set({ endDate: { ...settings.endDate, field: e.target.value } })}
+          >
+            <option value="">期日(due_date)</option>
+            {dateFieldOpts.map(f => (
+              <option key={f.key} value={f.key}>{f.name}</option>
+            ))}
+          </select>
+        </label>
+        <span className="rc-note">(バーの右端に使います。無い場合は開始日で代用)</span>
+      </div>
+      <div className="rc-line">
+        <label>
+          <input
+            type="checkbox"
+            checked={settings.endDate.highlightMissing}
+            onChange={e => set({ endDate: { ...settings.endDate, highlightMissing: e.target.checked } })}
+          />{' '}
+          終了日がない場合は行を赤色にする
+        </label>
+        <span className="rc-note">(行の色ルールに合致した行は、ルールの色が優先されます)</span>
+      </div>
+    </section>
+  )
+
   // ===== イナズマ線・表示 =====
   const displayEditor = (
     <section className="rc-sec">
@@ -415,6 +524,8 @@ export default function ChartSettingsPanel({
       {groupingsEditor}
       {columnsEditor}
       {progressEditor}
+      {rowColorEditor}
+      {endDateEditor}
       {displayEditor}
       {presetEditor}
     </div>
@@ -446,9 +557,21 @@ function GroupingEditor({ grouping, listFieldOpts, issues, fieldName, onChange, 
   const setGroup = (index: number, patch: Partial<GroupingDef['groups'][number]>) =>
     onChange({ groups: grouping.groups.map((g, i) => (i === index ? { ...g, ...patch } : g)) })
 
+  // グループ数が多いと縦に長くなるので、内容は既定で閉じておく
+  const [open, setOpen] = useState(false)
+
   return (
     <div className="rc-card">
       <div className="rc-line">
+        <button
+          type="button"
+          className="rc-toggle"
+          onClick={() => setOpen(v => !v)}
+          aria-label={open ? '内容を折り畳む' : '内容を展開'}
+          aria-expanded={open}
+        >
+          {open ? '▼' : '▶'}
+        </button>
         <input
           type="text"
           value={grouping.name}
@@ -467,7 +590,13 @@ function GroupingEditor({ grouping, listFieldOpts, issues, fieldName, onChange, 
         <button type="button" className="rc-btn" onClick={onDelete}>このグルーピングを削除</button>
       </div>
 
-      {grouping.groups.map((g, i) => {
+      {!open && (
+        <div className="rc-note">
+          {grouping.groups.length}グループ・割当済みの値 {assigned.size}件・未割当 {unassignedCount}件
+        </div>
+      )}
+
+      {open && grouping.groups.map((g, i) => {
         const options: Opt[] = pool
           .filter(v => !assigned.has(v) || g.values.includes(v))
           .map(v => ({ value: v, label: v }))
@@ -497,18 +626,20 @@ function GroupingEditor({ grouping, listFieldOpts, issues, fieldName, onChange, 
         )
       })}
 
-      <div className="rc-line">
-        <button
-          type="button"
-          className="rc-btn"
-          onClick={() => onChange({ groups: [...grouping.groups, { name: `グループ${grouping.groups.length + 1}`, values: [] }] })}
-        >
-          ＋ グループを追加
-        </button>
-        <span>未割当の値のまとめ先:</span>
-        <input type="text" value={grouping.otherLabel} onChange={e => onChange({ otherLabel: e.target.value })} />
-        <span className="rc-note">未割当の値: {unassignedCount}件</span>
-      </div>
+      {open && (
+        <div className="rc-line">
+          <button
+            type="button"
+            className="rc-btn"
+            onClick={() => onChange({ groups: [...grouping.groups, { name: `グループ${grouping.groups.length + 1}`, values: [] }] })}
+          >
+            ＋ グループを追加
+          </button>
+          <span>未割当の値のまとめ先:</span>
+          <input type="text" value={grouping.otherLabel} onChange={e => onChange({ otherLabel: e.target.value })} />
+          <span className="rc-note">未割当の値: {unassignedCount}件</span>
+        </div>
+      )}
     </div>
   )
 }

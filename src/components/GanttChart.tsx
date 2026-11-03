@@ -4,6 +4,7 @@ import { dayOfWeek, dayParts, formatDay, monthStart, parseDay, todayDay } from '
 import { getFieldValue } from '../utils/fields'
 import { buildInazumaPolyline } from '../utils/inazuma/compute'
 import { STRATEGIES } from '../utils/inazuma/strategies'
+import type { RowStyle } from '../utils/rowStyle'
 
 const ROW_H = 26
 const HEAD_H = 40
@@ -19,6 +20,8 @@ interface Props {
   inazuma: InazumaSettings
   range: RangeSettings
   baseDay: number
+  /** 行の色(ステータス別ルールなど)。色なしは null */
+  rowStyle: (row: GanttRow) => RowStyle | null
   onToggle: (nodeId: string) => void
 }
 
@@ -71,7 +74,7 @@ function buildMonthSegments(minDay: number, maxDay: number): MonthSeg[] {
   return segs
 }
 
-export default function GanttChart({ rows, fields, columns, scale, inazuma, range, baseDay, onToggle }: Props) {
+export default function GanttChart({ rows, fields, columns, scale, inazuma, range, baseDay, rowStyle, onToggle }: Props) {
   const px = PX_PER_DAY[scale]
   const today = todayDay()
 
@@ -176,9 +179,24 @@ export default function GanttChart({ rows, fields, columns, scale, inazuma, rang
     }
   }
 
-  // 左の表の1行分(階層ツリー + 列)
-  const renderLeft = (row: GanttRow) => (
-    <div className="rc-left" style={{ width: leftW }}>
+  // 左の表の1行分(階層ツリー + 列)。tint=false は追従行(背景色は固定)
+  const renderLeft = (row: GanttRow, tint = true) => {
+    const style = tint ? rowStyle(row) : null
+    return (
+    <div
+      className="rc-left"
+      style={{
+        width: leftW,
+        ...(style
+          ? {
+              // 横スクロール時に背面が透けないよう、白の上に色を重ねる
+              backgroundColor: '#fff',
+              backgroundImage: `linear-gradient(${style.bg}, ${style.bg})`,
+              color: style.text,
+            }
+          : {}),
+      }}
+    >
       <div className="rc-cell rc-name" style={{ width: NAME_W, paddingLeft: 4 + row.node.depth * 16 }}>
         {row.hasChildren ? (
           <button
@@ -193,7 +211,13 @@ export default function GanttChart({ rows, fields, columns, scale, inazuma, rang
           <span className="rc-toggle-space" />
         )}
         {row.node.kind === 'issue' && row.node.issue ? (
-          <a href={`/issues/${row.node.issue.id}`} target="_blank" rel="noopener noreferrer" title={row.node.label}>
+          <a
+            href={`/issues/${row.node.issue.id}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            title={row.node.label}
+            style={style?.text ? { color: style.text } : undefined}
+          >
             <span className="rc-id">#{row.node.issue.id}</span> {row.node.label}
           </a>
         ) : (
@@ -211,7 +235,8 @@ export default function GanttChart({ rows, fields, columns, scale, inazuma, rang
         </div>
       ))}
     </div>
-  )
+    )
+  }
 
   // 1行分のバー。rowTop はその行の上端の y 座標(通常行は i*ROW_H、追従行は 0)
   const renderBar = (row: GanttRow, rowTop: number) => {
@@ -298,7 +323,7 @@ export default function GanttChart({ rows, fields, columns, scale, inazuma, rang
               if (!row) return null
               return (
                 <div key={row.node.id} className="rc-row rc-sticky-row" style={{ height: ROW_H }}>
-                  {renderLeft(row)}
+                  {renderLeft(row, false)}
                   <svg width={timeW} height={ROW_H} className="rc-sticky-svg">
                     {renderBar(row, 0)}
                   </svg>
@@ -308,6 +333,11 @@ export default function GanttChart({ rows, fields, columns, scale, inazuma, rang
           </div>
 
           <svg className="rc-overlay" style={{ left: leftW }} width={timeW} height={bodyH}>
+            {/* 行の色(左の表と同じ色を右側にも敷く) */}
+            {rows.map((row, i) => {
+              const s = rowStyle(row)
+              return s ? <rect key={row.node.id} x={0} y={i * ROW_H} width={timeW} height={ROW_H} fill={s.bg} /> : null
+            })}
             {weekendDays.map(d => (
               <rect key={d} x={x(d)} y={0} width={px} height={bodyH} className="rc-weekend" />
             ))}
