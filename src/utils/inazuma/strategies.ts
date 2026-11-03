@@ -28,14 +28,20 @@ export interface InazumaStrategy {
 }
 
 /**
- * 1行の予定位置と実績位置の差(日)を求める。
- * バーは [start, end+1) 日の区間。予定位置 = 基準日の中央までの経過、実績位置 = 進捗率 × 期間。
+ * 1行の、基準線からのずれ(日)を求める。負=遅れ(左)、正=前倒し(右)。
+ * バーは [start, end+1) 日の区間。進捗の先端 = start + 進捗率 × 期間。基準日は日の中央(base + 0.5)で測る。
+ *  - 未着手(基準日が開始日より前): 進捗した日数ぶんだけ右(0% なら基準線上)
+ *  - 着手後: 進捗の先端と基準線の距離。期日を過ぎて未完了なら、先端が期日より左にあるぶん、
+ *    基準線から大きく左に出る(遅れの大きさがそのまま見える)
+ *  - 期日を過ぎて完了(進捗 100%): 基準線上(遅れではない)
  */
 export function offsetForSchedule(start: number, end: number, progress: number, baseDay: number): number {
   const duration = Math.max(1, end - start + 1)
-  const planned = Math.min(duration, Math.max(0, baseDay + 0.5 - start))
   const actual = (progress / 100) * duration
-  return actual - planned
+  const base = baseDay + 0.5
+  if (base <= start) return actual
+  if (progress >= 100 && base > end + 1) return 0
+  return start + actual - base
 }
 
 /**
@@ -52,10 +58,11 @@ const leafOnly: InazumaStrategy = {
       const target = row.isLabel ? ctx.includeLabels : node.kind === 'issue' && !row.hasChildren
       if (!target) return
       if (node.start == null || node.end == null) return
-      points.push({
-        rowIndex,
-        offsetDays: offsetForSchedule(node.start, node.end, row.progress, ctx.baseDay),
-      })
+      // 終了日が無いチケットは、いつまでに終わる予定か分からないので、遅れ・前倒しを判定せず基準線上に置く
+      const offsetDays = node.endMissing
+        ? 0
+        : offsetForSchedule(node.start, node.end, row.progress, ctx.baseDay)
+      points.push({ rowIndex, offsetDays })
     })
     return points
   },
