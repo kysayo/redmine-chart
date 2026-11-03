@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react'
 import Select from 'react-select'
 import type {
   ChartSettings,
+  ColumnConfig,
   FieldDef,
   GroupingDef,
   HierarchyLevel,
@@ -14,7 +15,7 @@ import type {
 import { collectDistinctValues } from '../utils/fields'
 import ColorPicker from './ColorPicker'
 import GroupingCsvImport from './GroupingCsvImport'
-import { toPresetJson } from '../utils/config'
+import { DEFAULT_COL_WIDTH, toPresetJson } from '../utils/config'
 import { STRATEGY_LIST } from '../utils/inazuma/strategies'
 
 interface Props {
@@ -192,16 +193,96 @@ export default function ChartSettingsPanel({
   )
 
   // ===== 列 =====
-  const unselectedColumnOpts = fieldOpts.filter(o => !settings.columns.includes(o.value))
+  const unselectedColumnOpts = fieldOpts.filter(o => !settings.columns.some(c => c.key === o.value))
+  const setColumn = (index: number, patch: Partial<ColumnConfig>) =>
+    set({ columns: settings.columns.map((c, i) => (i === index ? { ...c, ...patch } : c)) })
+
+  // 固定の範囲の右端。未設定(undefined)は従来どおり「すべての列を固定」= 最後の列
+  const lastKey = settings.columns[settings.columns.length - 1]?.key ?? ''
+  const freezeValue = settings.freezeAt ?? lastKey
+
+  const removeColumn = (index: number) => {
+    const key = settings.columns[index].key
+    const columns = settings.columns.filter((_, i) => i !== index)
+    // 固定の右端の列を消したときは、ひとつ前の列(なければ「チケット」列のみ)にする
+    const freezeAt = freezeValue === key ? (settings.columns[index - 1]?.key ?? '') : settings.freezeAt
+    set({ columns, freezeAt })
+  }
+
   const columnsEditor = (
     <section className="rc-sec">
       <h4>表示する列</h4>
-      {settings.columns.map((key, i) => (
-        <div key={key} className="rc-line">
-          <span className="rc-grow">{fieldName(key)}</span>
-          <button type="button" className="rc-btn" onClick={() => set({ columns: move(settings.columns, i, -1) })}>↑</button>
-          <button type="button" className="rc-btn" onClick={() => set({ columns: move(settings.columns, i, 1) })}>↓</button>
-          <button type="button" className="rc-btn" onClick={() => set({ columns: settings.columns.filter(c => c !== key) })}>✕</button>
+      <p className="rc-note">
+        幅の単位は px。「折り返し」にすると全文を表示し、行の高さが内容に合わせて広がります。
+        「切替」に同じ数字を入れた列は、見出しの＋/－ボタンで同時に表示・非表示になります。
+        「固定」を選んだ列より左は、横スクロールしても常に表示されます。
+      </p>
+      <div className="rc-line rc-colhead">
+        <span className="rc-grow">列</span>
+        <span className="rc-c-w">幅</span>
+        <span className="rc-c-wrap">折り返し</span>
+        <span className="rc-c-grp">切替</span>
+        <span className="rc-c-frz">固定</span>
+        <span className="rc-c-btn" />
+      </div>
+      <div className="rc-line">
+        <span className="rc-grow">チケット(階層ツリー・常に表示)</span>
+        <input
+          type="number"
+          className="rc-c-w"
+          min={30}
+          max={800}
+          value={settings.nameColumn.width}
+          onChange={e => set({ nameColumn: { ...settings.nameColumn, width: Number(e.target.value) } })}
+        />
+        <span className="rc-c-wrap">
+          <input
+            type="checkbox"
+            checked={settings.nameColumn.wrap}
+            onChange={e => set({ nameColumn: { ...settings.nameColumn, wrap: e.target.checked } })}
+          />
+        </span>
+        <span className="rc-c-grp" />
+        <span className="rc-c-frz">
+          <input type="radio" name="rc-freeze" checked={freezeValue === ''} onChange={() => set({ freezeAt: '' })} />
+        </span>
+        <span className="rc-c-btn" />
+      </div>
+      {settings.columns.map((col, i) => (
+        <div key={col.key} className="rc-line">
+          <span className="rc-grow">{fieldName(col.key)}</span>
+          <input
+            type="number"
+            className="rc-c-w"
+            min={30}
+            max={800}
+            value={col.width}
+            onChange={e => setColumn(i, { width: Number(e.target.value) })}
+          />
+          <span className="rc-c-wrap">
+            <input type="checkbox" checked={col.wrap} onChange={e => setColumn(i, { wrap: e.target.checked })} />
+          </span>
+          <input
+            type="number"
+            className="rc-c-grp"
+            min={1}
+            placeholder="-"
+            value={col.toggleGroup ?? ''}
+            onChange={e => setColumn(i, { toggleGroup: e.target.value === '' ? null : Math.max(1, Math.floor(Number(e.target.value))) })}
+          />
+          <span className="rc-c-frz">
+            <input
+              type="radio"
+              name="rc-freeze"
+              checked={freezeValue === col.key}
+              onChange={() => set({ freezeAt: col.key })}
+            />
+          </span>
+          <span className="rc-c-btn">
+            <button type="button" className="rc-btn" onClick={() => set({ columns: move(settings.columns, i, -1) })}>↑</button>
+            <button type="button" className="rc-btn" onClick={() => set({ columns: move(settings.columns, i, 1) })}>↓</button>
+            <button type="button" className="rc-btn" onClick={() => removeColumn(i)}>✕</button>
+          </span>
         </div>
       ))}
       <div className="rc-line">
@@ -210,7 +291,10 @@ export default function ChartSettingsPanel({
             value={null}
             options={unselectedColumnOpts}
             placeholder="列を追加…"
-            onChange={o => o && set({ columns: [...settings.columns, o.value] })}
+            onChange={o =>
+              o &&
+              set({ columns: [...settings.columns, { key: o.value, width: DEFAULT_COL_WIDTH, wrap: false, toggleGroup: null }] })
+            }
             {...portal}
           />
         </div>

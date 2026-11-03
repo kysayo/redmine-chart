@@ -45,6 +45,16 @@
 #moca-react-chart-root .rc-swatch:hover { outline: 2px solid #4f8fdc; }
 #moca-react-chart-root .rc-swatch-on { outline: 2px solid #222; outline-offset: 1px; }
 
+/* 設定画面の列テーブル */
+#moca-react-chart-root .rc-colhead { color: #777; font-size: 11px; }
+#moca-react-chart-root .rc-c-w { width: 64px; flex: none; }
+#moca-react-chart-root .rc-c-wrap { width: 56px; flex: none; text-align: center; }
+#moca-react-chart-root .rc-c-grp { width: 52px; flex: none; text-align: center; }
+#moca-react-chart-root .rc-c-frz { width: 40px; flex: none; text-align: center; }
+#moca-react-chart-root .rc-c-btn { width: 110px; flex: none; }
+#moca-react-chart-root .rc-settings input[type='number'].rc-c-w,
+#moca-react-chart-root .rc-settings input[type='number'].rc-c-grp { width: 56px; }
+
 /* ガント */
 #moca-react-chart-root .rc-scroll { overflow-x: auto; overflow-y: hidden; border: 1px solid #ddd; background: #fff; }
 #moca-react-chart-root .rc-inner { position: relative; }
@@ -53,10 +63,32 @@
 /* 親階層の追従行。見出しの直下に重ねる */
 #moca-react-chart-root .rc-sticky { position: absolute; top: 0; left: 0; z-index: 5; will-change: transform; box-shadow: 0 2px 3px rgba(0, 0, 0, 0.12); }
 #moca-react-chart-root .rc-sticky-row { background: #f7f9fc; }
-#moca-react-chart-root .rc-sticky-row .rc-left { background: #f7f9fc; }
+#moca-react-chart-root .rc-sticky-row .rc-left,
+#moca-react-chart-root .rc-sticky-row .rc-lscroll { background: #f7f9fc; }
 #moca-react-chart-root .rc-sticky-svg { display: block; flex: none; background: #f7f9fc; }
 #moca-react-chart-root .rc-left { position: sticky; left: 0; z-index: 3; display: flex; background: #fff; flex: none; border-right: 1px solid #ccc; }
+/* 固定されない列(横スクロールで流れる部分) */
+#moca-react-chart-root .rc-lscroll { display: flex; flex: none; border-right: 1px solid #ccc; }
 #moca-react-chart-root .rc-left-head { background: #f3f3f3; font-weight: bold; align-items: center; }
+/* 折り返す列: 行の高さが内容に合わせて広がる */
+#moca-react-chart-root .rc-wrap-cell { white-space: normal; overflow-wrap: anywhere; padding-top: 4px; padding-bottom: 4px; }
+#moca-react-chart-root .rc-wrap-cell a,
+#moca-react-chart-root .rc-wrap-cell .rc-group-label { white-space: normal; overflow: visible; text-overflow: clip; }
+/* 列の表示切替(＋/－)と、畳んだ列の目印 */
+#moca-react-chart-root .rc-ph { justify-content: center; padding: 0; background: rgba(0, 0, 0, 0.04); }
+#moca-react-chart-root .rc-gtoggle {
+  border: 1px solid #aaa; background: #fff; border-radius: 3px; cursor: pointer; padding: 0 3px; margin-right: 3px;
+  font-size: 11px; line-height: 14px; flex: none; color: #444;
+}
+#moca-react-chart-root .rc-gtoggle:hover { background: #eaf2fc; }
+/* 左右にスクロールするボタン(薄く表示し、マウスを載せると濃くなる) */
+#moca-react-chart-root .rc-wrap { position: relative; }
+#moca-react-chart-root .rc-nav {
+  position: absolute; z-index: 8; transform: translateY(-50%); width: 28px; height: 44px; padding: 0;
+  border: 1px solid #999; border-radius: 4px; background: #fff; color: #333; font-size: 16px; cursor: pointer; opacity: 0.35;
+}
+#moca-react-chart-root .rc-nav:hover { opacity: 0.9; }
+#moca-react-chart-root .rc-nav-right { right: 4px; }
 #moca-react-chart-root .rc-head-svg { display: block; flex: none; }
 #moca-react-chart-root .rc-cell {
   box-sizing: border-box; padding: 0 4px; overflow: hidden; white-space: nowrap; text-overflow: ellipsis;
@@ -65,7 +97,8 @@
 #moca-react-chart-root .rc-body { position: relative; }
 /* border-box にして下線込みで ROW_H(26px) に固定する。ずれると本体の高さを超えて縦スクロールが出る */
 #moca-react-chart-root .rc-row { display: flex; box-sizing: border-box; border-bottom: 1px solid #eee; }
-#moca-react-chart-root .rc-row:hover .rc-left { background: #f0f6ff; }
+#moca-react-chart-root .rc-row:hover .rc-left,
+#moca-react-chart-root .rc-row:hover .rc-lscroll { background: #f0f6ff; }
 #moca-react-chart-root .rc-name a { color: #1a4d8f; text-decoration: none; overflow: hidden; text-overflow: ellipsis; }
 #moca-react-chart-root .rc-name a:hover { text-decoration: underline; }
 #moca-react-chart-root .rc-id { color: #888; }

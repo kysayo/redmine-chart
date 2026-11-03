@@ -1,6 +1,6 @@
 // ローカル開発(npm run dev)専用のダミーデータ。本番ビルドでは import.meta.env.DEV が false になり含まれない。
 import type { ChartSettings, FieldDef, RedmineIssue } from '../types'
-import { buildDefaultSettings } from './config'
+import { buildDefaultSettings, toColumns } from './config'
 import { formatDay, todayDay } from './dateUtils'
 
 export const MOCK_STATUS_NAMES = ['新規', '進行中', 'フィードバック', '解決', 'Closed', 'Dropped']
@@ -133,7 +133,7 @@ export function buildMockSettings(): ChartSettings {
         })),
       },
     ],
-    columns: ['status', 'assigned_to', 'start_date', 'due_date'],
+    columns: toColumns(['status', 'assigned_to', 'start_date', 'due_date']),
     statusProgress: MOCK_STATUS_PROGRESS,
   }
 }

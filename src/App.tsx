@@ -221,6 +221,8 @@ export default function App({ container }: Props) {
           rows={rows}
           fields={fields}
           columns={settings.columns}
+          nameColumn={settings.nameColumn}
+          freezeAt={settings.freezeAt}
           scale={settings.scale}
           inazuma={settings.inazuma}
           range={settings.range}

@@ -92,6 +92,24 @@ export interface RangeSettings {
   endDate: string
 }
 
+/** 左の表の列設定 */
+export interface ColumnConfig {
+  /** フィールドのキー(status / assigned_to / cf_N など) */
+  key: string
+  /** 列幅(px) */
+  width: number
+  /** 折り返して全文を表示する(行の高さが内容に合わせて広がる) */
+  wrap: boolean
+  /** 表示切替グループ。同じ値の列は、見出しの ＋/－ ボタンで同時に表示・非表示になる。null=切替なし */
+  toggleGroup: number | null
+}
+
+/** 先頭の「チケット」(階層ツリー)列の設定 */
+export interface NameColumnConfig {
+  width: number
+  wrap: boolean
+}
+
 /**
  * 行の色ルール。上から順に評価し、最初に合致したルールを適用する。
  * useClosed が true のときは statuses ではなく、ステータスの「終了」属性(is_closed)で判定する。
@@ -119,8 +137,14 @@ export interface ChartSettings {
   version: 1
   levels: HierarchyLevel[]
   groupings: GroupingDef[]
-  /** 左の表に表示する列(field key)。先頭の名称列(階層ツリー)は固定 */
-  columns: string[]
+  /** 左の表に表示する列。先頭の「チケット」列(階層ツリー)は常に表示 */
+  columns: ColumnConfig[]
+  nameColumn: NameColumnConfig
+  /**
+   * 横スクロールしても固定する範囲の、右端の列のキー。空文字=「チケット」列のみ。
+   * 未設定(undefined)=すべての列を固定(従来の動作)
+   */
+  freezeAt?: string
   /** ステータス名 → 進捗率(0-100)。未設定のステータスは 完了=100 / それ以外=done_ratio */
   statusProgress: Record<string, number>
   inazuma: InazumaSettings
