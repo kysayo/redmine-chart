@@ -98,8 +98,14 @@
 #moca-react-chart-root .rc-body { position: relative; }
 /* border-box にして下線込みで ROW_H(26px) に固定する。ずれると本体の高さを超えて縦スクロールが出る */
 #moca-react-chart-root .rc-row { display: flex; box-sizing: border-box; }
-#moca-react-chart-root .rc-row.rc-top-dark { border-top: 1px solid #444; }
-#moca-react-chart-root .rc-row.rc-top-dash { border-top: 1px dashed #bbb; }
+/* 行の上の罫線は、色帯(.rc-band)には引かず、その右の名前・列の部分にだけ引く。
+   こうすると色帯が縦に途切れずにつながり、ラベル名のセルの下にも線が入らない(Excel のセル結合風) */
+#moca-react-chart-root .rc-row.rc-top-dark > .rc-left > .rc-cell,
+#moca-react-chart-root .rc-row.rc-top-dark > .rc-left > .rc-labelcell,
+#moca-react-chart-root .rc-row.rc-top-dark > .rc-lscroll { border-top: 1px solid #444; }
+#moca-react-chart-root .rc-row.rc-top-dash > .rc-left > .rc-cell,
+#moca-react-chart-root .rc-row.rc-top-dash > .rc-left > .rc-labelcell,
+#moca-react-chart-root .rc-row.rc-top-dash > .rc-lscroll { border-top: 1px dashed #bbb; }
 #moca-react-chart-root .rc-row.rc-last { border-bottom: 1px solid #444; }
 /* ラベル行: 祖先の色帯(右端が濃い実線で、下の行まで縦につながる)と、右端まで塗るラベル */
 #moca-react-chart-root .rc-band { flex: none; box-sizing: border-box; border-right: 1px solid #444; }

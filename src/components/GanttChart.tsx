@@ -612,7 +612,11 @@ export default function GanttChart({
             </div>
 
             <svg className="rc-overlay" style={{ left: leftW }} width={timeW} height={bodyH}>
-              {/* 行の色(左の表と同じ色を右側にも敷く)。ラベル行は階層の色を薄くしたもの */}
+              {/* 土日の網掛け。行の色より下に描くので、ラベル行は土日でもラベルの色になる */}
+              {weekendDays.map(d => (
+                <rect key={d} x={x(d)} y={0} width={px} height={bodyH} className="rc-weekend" />
+              ))}
+              {/* 行の色(左の表と同じ色を右側にも敷く)。ラベル行は階層の色を薄くしたもの(不透明) */}
               {rows.map((row, i) => {
                 const fill = row.isLabel
                   ? mixWithWhite(labelColor(row.labelDepth), TIMELINE_TINT)
@@ -621,9 +625,6 @@ export default function GanttChart({
                   <rect key={row.node.id} x={0} y={rowTops[i]} width={timeW} height={rowHeights[i]} fill={fill} />
                 ) : null
               })}
-              {weekendDays.map(d => (
-                <rect key={d} x={x(d)} y={0} width={px} height={bodyH} className="rc-weekend" />
-              ))}
               {monthSegs.map(s => (
                 <line key={s.from} x1={x(s.from)} x2={x(s.from)} y1={0} y2={bodyH} className="rc-grid" />
               ))}
