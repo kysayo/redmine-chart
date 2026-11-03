@@ -12,6 +12,7 @@ import type {
   TimelineScale,
 } from '../types'
 import { collectDistinctValues } from '../utils/fields'
+import ColorPicker from './ColorPicker'
 import GroupingCsvImport from './GroupingCsvImport'
 import { toPresetJson } from '../utils/config'
 import { STRATEGY_LIST } from '../utils/inazuma/strategies'
@@ -282,23 +283,25 @@ export default function ChartSettingsPanel({
               {...portal}
             />
           </div>
-          <label>
-            背景色 <input type="color" value={rule.bg} onChange={e => setRule(i, { bg: e.target.value })} />
-          </label>
-          <label>
-            <input
-              type="checkbox"
-              checked={rule.textColor !== ''}
-              onChange={e => setRule(i, { textColor: e.target.checked ? '#888888' : '' })}
-            />{' '}
-            文字色{' '}
-            <input
-              type="color"
+          <span className="rc-inline">
+            背景色 <ColorPicker label="背景色" value={rule.bg} onChange={c => setRule(i, { bg: c })} />
+          </span>
+          <span className="rc-inline">
+            <label>
+              <input
+                type="checkbox"
+                checked={rule.textColor !== ''}
+                onChange={e => setRule(i, { textColor: e.target.checked ? '#888888' : '' })}
+              />{' '}
+              文字色
+            </label>
+            <ColorPicker
+              label="文字色"
               disabled={rule.textColor === ''}
               value={rule.textColor || '#888888'}
-              onChange={e => setRule(i, { textColor: e.target.value })}
+              onChange={c => setRule(i, { textColor: c })}
             />
-          </label>
+          </span>
           <button type="button" className="rc-btn" onClick={() => set({ rowColors: move(settings.rowColors, i, -1) })}>↑</button>
           <button type="button" className="rc-btn" onClick={() => set({ rowColors: move(settings.rowColors, i, 1) })}>↓</button>
           <button type="button" className="rc-btn" onClick={() => set({ rowColors: settings.rowColors.filter((_, j) => j !== i) })}>✕</button>
