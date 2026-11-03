@@ -9,7 +9,7 @@ import { applyViewFilters } from './utils/filters'
 import { buildTree, collectExpandableIds, flattenTree } from './utils/hierarchy'
 import { resolveBaseDay } from './utils/inazuma/compute'
 import { buildMockIssues, buildMockSettings, MOCK_EXTRA_FIELDS, MOCK_STATUS_NAMES } from './utils/mockIssues'
-import { fetchAllIssues, getStatusNamesFromPage } from './utils/redmineApi'
+import { fetchAllIssues, fetchStatusNamesFromFilter, getStatusNamesFromPage } from './utils/redmineApi'
 import { loadSettings, saveSettings } from './utils/storage'
 import { resolveRowStyle } from './utils/rowStyle'
 import { getProjectId } from './utils/urlParser'
@@ -179,12 +179,29 @@ export default function App({ container }: Props) {
 
   const allIssues = useMemo(() => issueState.issues ?? [], [issueState.issues])
 
+  // サブプロジェクトのステータスも含む一覧(絞り込み用の選択肢から取得)
+  const [filterStatusNames, setFilterStatusNames] = useState<string[]>([])
+  useEffect(() => {
+    if (!shouldFetch) return
+    let cancelled = false
+    void fetchStatusNamesFromFilter(apiKey).then(names => {
+      if (names && !cancelled) setFilterStatusNames(names)
+    })
+    return () => {
+      cancelled = true
+    }
+  }, [apiKey, shouldFetch])
+
   const statusNames = useMemo(() => {
-    const names = new Set<string>(getStatusNamesFromPage() ?? (import.meta.env.DEV ? MOCK_STATUS_NAMES : []))
+    // ワークフローの並び(ページ・絞り込みの選択肢)を先に、実データと設定済みのものを後ろに足す
+    const names = new Set<string>([
+      ...(getStatusNamesFromPage() ?? (import.meta.env.DEV ? MOCK_STATUS_NAMES : [])),
+      ...filterStatusNames,
+    ])
     allIssues.forEach(i => names.add(i.status.name))
     Object.keys(settings.statusProgress).forEach(n => names.add(n))
     return Array.from(names)
-  }, [allIssues, settings.statusProgress])
+  }, [allIssues, settings.statusProgress, filterStatusNames])
 
   // labelsVersion: 値の表示名(ユーザー名など)が読み込まれたら、絞り込み・階層を作り直す
   const filteredIssues = useMemo(

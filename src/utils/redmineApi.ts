@@ -1,4 +1,5 @@
 import type { FetchProgress, RedmineIssue, RedmineIssuesResponse } from '../types'
+import { getProjectId } from './urlParser'
 
 function buildHeaders(apiKey: string): HeadersInit {
   const headers: Record<string, string> = { 'Content-Type': 'application/json' }
@@ -60,6 +61,37 @@ export async function fetchAllIssues(
   }
 
   return all
+}
+
+let remoteStatusNames: Promise<string[] | null> | null = null
+
+/**
+ * 絞り込み用の選択肢と同じ手段(Redmine 内部の /queries/filter。管理者権限は不要)でステータス名を取得する。
+ * ページに埋め込まれた値はそのプロジェクトのものだけの場合があるが、こちらはサブプロジェクトのステータスも含む。
+ * 取得に失敗したときは null。結果はページの読み込み中は使い回す。
+ */
+export function fetchStatusNamesFromFilter(apiKey: string): Promise<string[] | null> {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  if (!(window as any).availableFilters?.status_id) return Promise.resolve(null)
+  remoteStatusNames ??= (async () => {
+    try {
+      const params = new URLSearchParams({ type: 'IssueQuery', name: 'status_id' })
+      const projectId = getProjectId()
+      if (projectId) params.set('project_id', projectId)
+      const res = await fetch(`/queries/filter?${params}`, { headers: buildHeaders(apiKey) })
+      if (!res.ok) return null
+      const data: unknown = await res.json()
+      if (!Array.isArray(data)) return null
+      // [["名前","id"],...] または ["名前",...]
+      const names = data
+        .map(v => (Array.isArray(v) ? v[0] : v))
+        .filter((v): v is string => typeof v === 'string' && v !== '')
+      return names.length > 0 ? names : null
+    } catch {
+      return null
+    }
+  })()
+  return remoteStatusNames
 }
 
 /** チケット一覧ページの availableFilters からステータス名の一覧を取得する。無ければ null */
