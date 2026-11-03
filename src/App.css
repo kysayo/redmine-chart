@@ -71,9 +71,10 @@
 #moca-react-chart-root .rc-lscroll { display: flex; flex: none; border-right: 1px solid #ccc; }
 #moca-react-chart-root .rc-left-head { background: #f3f3f3; font-weight: bold; align-items: center; }
 /* 折り返す列: 行の高さが内容に合わせて広がる */
-#moca-react-chart-root .rc-wrap-cell { white-space: normal; overflow-wrap: anywhere; padding-top: 4px; padding-bottom: 4px; }
-#moca-react-chart-root .rc-wrap-cell a,
-#moca-react-chart-root .rc-wrap-cell .rc-group-label { white-space: normal; overflow: visible; text-overflow: clip; }
+/* .rc-cell(後ろで定義)の nowrap・padding に負けないよう、クラスを重ねて強くしている */
+#moca-react-chart-root .rc-cell.rc-wrap-cell { white-space: normal; overflow-wrap: anywhere; padding-top: 4px; padding-bottom: 4px; }
+#moca-react-chart-root .rc-cell.rc-wrap-cell a,
+#moca-react-chart-root .rc-cell.rc-wrap-cell .rc-group-label { white-space: normal; overflow: visible; text-overflow: clip; }
 /* 列の表示切替(＋/－)と、畳んだ列の目印 */
 #moca-react-chart-root .rc-ph { justify-content: center; padding: 0; background: rgba(0, 0, 0, 0.04); }
 #moca-react-chart-root .rc-gtoggle {
