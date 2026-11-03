@@ -17,6 +17,14 @@ export function hexToRgba(hex: string, alpha: number): string {
   return `rgba(${parseInt(m[1], 16)}, ${parseInt(m[2], 16)}, ${parseInt(m[3], 16)}, ${alpha})`
 }
 
+/** 色を白と混ぜた不透明な色を返す(ratio=元の色の割合)。背面を透かさずに薄い色を作りたいときに使う */
+export function mixWithWhite(hex: string, ratio: number): string {
+  const m = /^#?([0-9a-f]{2})([0-9a-f]{2})([0-9a-f]{2})$/i.exec(hex.trim())
+  if (!m) return '#eeeeee'
+  const mix = (h: string) => Math.round(255 - (255 - parseInt(h, 16)) * ratio)
+  return `rgb(${mix(m[1])}, ${mix(m[2])}, ${mix(m[3])})`
+}
+
 /**
  * 行の色を決める。優先順位:
  * 1. 行の色ルール(上から順、最初に合致したもの)

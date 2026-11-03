@@ -4,6 +4,7 @@ import type {
   FieldDef,
   GanttRow,
   InazumaSettings,
+  LabelRowSettings,
   NameColumnConfig,
   RangeSettings,
   TimelineScale,
@@ -12,13 +13,18 @@ import { dayOfWeek, dayParts, formatDay, monthStart, parseDay, todayDay } from '
 import { getFieldValue } from '../utils/fields'
 import { buildInazumaPolyline } from '../utils/inazuma/compute'
 import { STRATEGIES } from '../utils/inazuma/strategies'
-import type { RowStyle } from '../utils/rowStyle'
+import { DEFAULT_LABEL_COLORS } from '../utils/config'
+import { mixWithWhite, type RowStyle } from '../utils/rowStyle'
 
 /** 行の最小の高さ。折り返しのある行はこれより高くなる */
 const ROW_H = 26
 const HEAD_H = 40
 /** 畳んだ列グループの目印(＋ボタン)の幅 */
 const PLACEHOLDER_W = 26
+/** ラベル行の色帯1本の幅(階層が1つ深くなるごとに左へ積む) */
+const BAND_W = 20
+/** ラベル行のタイムライン側の色の濃さ(ラベル色の割合。残りは白) */
+const TIMELINE_TINT = 0.55
 const PX_PER_DAY: Record<TimelineScale, number> = { day: 24, week: 9, month: 3 }
 
 interface Props {
@@ -34,6 +40,8 @@ interface Props {
   baseDay: number
   /** 行の色(ステータス別ルールなど)。色なしは null */
   rowStyle: (row: GanttRow) => RowStyle | null
+  labelRows: LabelRowSettings
+  labelColors: string[]
   onToggle: (nodeId: string) => void
 }
 
@@ -110,6 +118,8 @@ export default function GanttChart({
   range,
   baseDay,
   rowStyle,
+  labelRows,
+  labelColors,
   onToggle,
 }: Props) {
   const px = PX_PER_DAY[scale]
@@ -212,11 +222,29 @@ export default function GanttChart({
     return () => ro.disconnect()
   }, [rows])
 
+  // 各行の上の罫線の種類。ラベルの範囲の境(ラベル行の上、ラベル行の直後、範囲を抜けた行の上)は濃い実線、
+  // 同じグループ内のチケット間は薄い破線
+  const topKinds = useMemo<Array<'none' | 'dark' | 'dash'>>(
+    () =>
+      rows.map((row, i) => {
+        if (i === 0) return 'none'
+        const prev = rows[i - 1]
+        return row.isLabel || prev.isLabel || row.labelDepth < prev.labelDepth ? 'dark' : 'dash'
+      }),
+    [rows],
+  )
+
+  // ラベル行の色(深さ順。足りない分は先頭から繰り返す)
+  const labelColor = (depth: number) => {
+    const palette = labelColors.length > 0 ? labelColors : DEFAULT_LABEL_COLORS
+    return palette[depth % palette.length]
+  }
+
   const inazumaLine = useMemo(() => {
     if (!inazuma.enabled) return ''
     const strategy = STRATEGIES[inazuma.strategy]
     if (!strategy) return ''
-    const points = strategy.computePoints(rows, { baseDay })
+    const points = strategy.computePoints(rows, { baseDay, includeLabels: inazuma.includeLabels })
     return buildInazumaPolyline(
       points,
       (baseDay - minDay) * px + px / 2,
@@ -228,6 +256,7 @@ export default function GanttChart({
       timeW,
     )
   }, [inazuma, rows, baseDay, minDay, px, bodyH, timeW, rowTops, rowHeights])
+
 
   // 各行の親行のインデックス(深さの連なりから求める)。-1 は親なし
   const parentIdx = useMemo(() => {
@@ -374,8 +403,59 @@ export default function GanttChart({
       </div>
     )
 
+  // 折り畳み(▶/▼)ボタン。子が無い行は同じ幅の空きを置く
+  const renderToggle = (row: GanttRow) =>
+    row.hasChildren ? (
+      <button
+        type="button"
+        className="rc-toggle"
+        onClick={() => onToggle(row.node.id)}
+        aria-label={row.collapsed ? '展開' : '折り畳み'}
+      >
+        {row.collapsed ? '▶' : '▼'}
+      </button>
+    ) : (
+      <span className="rc-toggle-space" />
+    )
+
   // 左の表の1行分(固定部分 + スクロール部分)。tint=false は追従行(背景色は固定)
   const renderLeft = (row: GanttRow, tint = true) => {
+    // 祖先のラベル行の色帯。下の階層の行が続く間、同じ色で縦につながる
+    const bandsW = row.labelDepth * BAND_W
+    const bands = Array.from({ length: row.labelDepth }, (_, k) => (
+      <div key={k} className="rc-band" style={{ width: BAND_W, background: labelColor(k) }} />
+    ))
+
+    // ラベル行(グループ・ラベル扱いの親チケット): 列は出さず、右端まで同じ色で塗る
+    if (row.isLabel) {
+      const color = labelColor(row.labelDepth)
+      const issue = row.node.issue
+      return (
+        <>
+          <div className="rc-left" style={{ width: frozenW }}>
+            {bands}
+            <div
+              className={`rc-labelcell${scrollCols.length === 0 ? ' rc-edge' : ''}`}
+              style={{ width: Math.max(0, frozenW - bandsW), background: color }}
+            >
+              {renderToggle(row)}
+              {issue ? (
+                <a href={`/issues/${issue.id}`} target="_blank" rel="noopener noreferrer" title={row.node.label}>
+                  <span className="rc-id">#{issue.id}</span> {row.node.label}
+                </a>
+              ) : (
+                <span title={row.node.label}>{row.node.label}</span>
+              )}
+              <span className="rc-meta">
+                {' '}({issue ? row.node.issueCount - 1 : row.node.issueCount}件・{Math.round(row.progress)}%)
+              </span>
+            </div>
+          </div>
+          {scrollCols.length > 0 && <div className="rc-lscroll rc-edge" style={{ width: scrollW, background: color }} />}
+        </>
+      )
+    }
+
     const style = tint ? rowStyle(row) : null
     // 横スクロール時に背面が透けないよう、固定部分は白の上に色を重ねる
     const tintImage = style ? { backgroundImage: `linear-gradient(${style.bg}, ${style.bg})`, color: style.text } : {}
@@ -385,23 +465,13 @@ export default function GanttChart({
           className="rc-left"
           style={{ width: frozenW, ...(style ? { backgroundColor: '#fff', ...tintImage } : {}) }}
         >
+          {bands}
           <div
             className={`rc-cell rc-name${nameColumn.wrap ? ' rc-wrap-cell' : ''}`}
-            style={{ width: nameColumn.width, paddingLeft: 4 + row.node.depth * 16 }}
+            style={{ width: Math.max(60, nameColumn.width - bandsW), paddingLeft: 4 + row.plainDepth * 16 }}
           >
-            {row.hasChildren ? (
-              <button
-                type="button"
-                className="rc-toggle"
-                onClick={() => onToggle(row.node.id)}
-                aria-label={row.collapsed ? '展開' : '折り畳み'}
-              >
-                {row.collapsed ? '▶' : '▼'}
-              </button>
-            ) : (
-              <span className="rc-toggle-space" />
-            )}
-            {row.node.kind === 'issue' && row.node.issue ? (
+            {renderToggle(row)}
+            {row.node.issue && (
               <a
                 href={`/issues/${row.node.issue.id}`}
                 target="_blank"
@@ -411,13 +481,6 @@ export default function GanttChart({
               >
                 <span className="rc-id">#{row.node.issue.id}</span> {row.node.label}
               </a>
-            ) : (
-              <span className="rc-group-label" title={row.node.label}>
-                {row.node.label}
-                <span className="rc-meta">
-                  {' '}({row.node.issueCount}件・{Math.round(row.node.progress)}%)
-                </span>
-              </span>
             )}
           </div>
           {frozenCols.map(c => renderBodyCell(row, c))}
@@ -435,6 +498,8 @@ export default function GanttChart({
   const renderBar = (row: GanttRow, rowTop: number, rowHeight: number) => {
     const { node } = row
     if (node.start == null || node.end == null) return null
+    // ラベル行のバーは設定で出し分ける(ラベルとして完全に扱うときは出さない)
+    if (row.isLabel && !labelRows.showBar) return null
     const bx = x(node.start)
     const bw = (node.end - node.start + 1) * px
     const isGroup = node.kind === 'group'
@@ -443,13 +508,13 @@ export default function GanttChart({
     const y = rowTop + (rowHeight - h) / 2
     const cls = isGroup ? 'rc-bar-group' : isParent ? 'rc-bar-parent' : 'rc-bar'
     const tip = node.issue
-      ? `#${node.issue.id} ${node.label}\n${formatDay(node.start)} 〜 ${formatDay(node.end)}\n進捗 ${Math.round(node.progress)}%`
-      : `${node.label}\n${formatDay(node.start)} 〜 ${formatDay(node.end)}\n進捗 ${Math.round(node.progress)}%`
+      ? `#${node.issue.id} ${node.label}\n${formatDay(node.start)} 〜 ${formatDay(node.end)}\n進捗 ${Math.round(row.progress)}%`
+      : `${node.label}\n${formatDay(node.start)} 〜 ${formatDay(node.end)}\n進捗 ${Math.round(row.progress)}%`
     return (
       <g key={node.id} className="rc-bar-wrap">
         <title>{tip}</title>
         <rect x={bx} y={y} width={bw} height={h} rx={2} className={`${cls} rc-bar-bg`} />
-        <rect x={bx} y={y} width={(bw * node.progress) / 100} height={h} rx={2} className={`${cls} rc-bar-fill`} />
+        <rect x={bx} y={y} width={(bw * row.progress) / 100} height={h} rx={2} className={`${cls} rc-bar-fill`} />
       </g>
     )
   }
@@ -507,7 +572,7 @@ export default function GanttChart({
 
           {/* 本体 */}
           <div className="rc-body" style={{ height: bodyH }}>
-            {rows.map(row => (
+            {rows.map((row, i) => (
               <div
                 key={row.node.id}
                 data-row-id={row.node.id}
@@ -515,7 +580,9 @@ export default function GanttChart({
                   if (el) rowEls.current.set(row.node.id, el)
                   else rowEls.current.delete(row.node.id)
                 }}
-                className="rc-row"
+                className={`rc-row${topKinds[i] === 'dark' ? ' rc-top-dark' : topKinds[i] === 'dash' ? ' rc-top-dash' : ''}${
+                  i === rows.length - 1 ? ' rc-last' : ''
+                }`}
                 style={{ minHeight: ROW_H }}
               >
                 {renderLeft(row)}
@@ -531,7 +598,12 @@ export default function GanttChart({
                 return (
                   <div key={row.node.id} className="rc-row rc-sticky-row" style={{ height: h }}>
                     {renderLeft(row, false)}
-                    <svg width={timeW} height={h} className="rc-sticky-svg">
+                    <svg
+                      width={timeW}
+                      height={h}
+                      className="rc-sticky-svg"
+                      style={row.isLabel ? { background: mixWithWhite(labelColor(row.labelDepth), TIMELINE_TINT) } : undefined}
+                    >
                       {renderBar(row, 0, h)}
                     </svg>
                   </div>
@@ -540,11 +612,13 @@ export default function GanttChart({
             </div>
 
             <svg className="rc-overlay" style={{ left: leftW }} width={timeW} height={bodyH}>
-              {/* 行の色(左の表と同じ色を右側にも敷く) */}
+              {/* 行の色(左の表と同じ色を右側にも敷く)。ラベル行は階層の色を薄くしたもの */}
               {rows.map((row, i) => {
-                const s = rowStyle(row)
-                return s ? (
-                  <rect key={row.node.id} x={0} y={rowTops[i]} width={timeW} height={rowHeights[i]} fill={s.bg} />
+                const fill = row.isLabel
+                  ? mixWithWhite(labelColor(row.labelDepth), TIMELINE_TINT)
+                  : rowStyle(row)?.bg
+                return fill ? (
+                  <rect key={row.node.id} x={0} y={rowTops[i]} width={timeW} height={rowHeights[i]} fill={fill} />
                 ) : null
               })}
               {weekendDays.map(d => (
@@ -553,9 +627,20 @@ export default function GanttChart({
               {monthSegs.map(s => (
                 <line key={s.from} x1={x(s.from)} x2={x(s.from)} y1={0} y2={bodyH} className="rc-grid" />
               ))}
-              {rows.map((_, i) => (
-                <line key={i} x1={0} x2={timeW} y1={rowTops[i + 1]} y2={rowTops[i + 1]} className="rc-grid-h" />
-              ))}
+              {/* 行の区切り線: ラベルの範囲の境は濃い実線、同じグループ内のチケット間は薄い破線 */}
+              {rows.map((row, i) =>
+                topKinds[i] === 'none' ? null : (
+                  <line
+                    key={row.node.id}
+                    x1={0}
+                    x2={timeW}
+                    y1={rowTops[i] + 0.5}
+                    y2={rowTops[i] + 0.5}
+                    className={topKinds[i] === 'dark' ? 'rc-line-dark' : 'rc-line-dash'}
+                  />
+                ),
+              )}
+              <line x1={0} x2={timeW} y1={bodyH - 0.5} y2={bodyH - 0.5} className="rc-line-dark" />
 
               {/* 今日 */}
               <line x1={x(today) + px / 2} x2={x(today) + px / 2} y1={0} y2={bodyH} className="rc-today" />

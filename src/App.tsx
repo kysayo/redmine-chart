@@ -215,7 +215,10 @@ export default function App({ container }: Props) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [filteredIssues, settings, labelsVersion],
   )
-  const rows = useMemo(() => flattenTree(tree, collapsedIds), [tree, collapsedIds])
+  const rows = useMemo(
+    () => flattenTree(tree, collapsedIds, settings.labelRows.parentAsLabel),
+    [tree, collapsedIds, settings.labelRows.parentAsLabel],
+  )
   const baseDay = resolveBaseDay(settings.inazuma.baseDate)
 
   const toggleNode = useCallback((id: string) => {
@@ -279,6 +282,8 @@ export default function App({ container }: Props) {
           range={settings.range}
           baseDay={baseDay}
           rowStyle={row => resolveRowStyle(row.node, settings)}
+          labelRows={settings.labelRows}
+          labelColors={settings.labelColors}
           onToggle={toggleNode}
         />
       )}

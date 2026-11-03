@@ -176,15 +176,29 @@ export function buildTree(issues: RedmineIssue[], settings: ChartSettings): Tree
   return buildLevel(issues, settings.levels, 0, 0, '', { settings })
 }
 
-/** 折り畳み状態を反映して、表示する行を上から順に平坦化する */
-export function flattenTree(roots: TreeNode[], collapsedIds: Set<string>): GanttRow[] {
+/**
+ * 折り畳み状態を反映して、表示する行を上から順に平坦化する。
+ * parentAsLabel: 子を持つチケットを、グループと同じラベル行として扱う。
+ */
+export function flattenTree(roots: TreeNode[], collapsedIds: Set<string>, parentAsLabel: boolean): GanttRow[] {
   const rows: GanttRow[] = []
-  const walk = (node: TreeNode) => {
+  const walk = (node: TreeNode, labelDepth: number, plainDepth: number) => {
     const collapsed = collapsedIds.has(node.id)
-    rows.push({ node, hasChildren: node.children.length > 0, collapsed })
-    if (!collapsed) node.children.forEach(walk)
+    const hasChildren = node.children.length > 0
+    const isLabel = node.kind === 'group' || (parentAsLabel && hasChildren)
+    let progress = node.progress
+    if (isLabel && node.kind === 'issue') {
+      // ラベル扱いの親チケットは、自身のステータスではなく配下のリーフの平均で表す
+      const leaves: number[] = []
+      node.children.forEach(c => collectLeafProgress(c, leaves))
+      progress = leaves.length > 0 ? leaves.reduce((s, p) => s + p, 0) / leaves.length : node.progress
+    }
+    rows.push({ node, hasChildren, collapsed, isLabel, labelDepth, plainDepth, progress })
+    if (!collapsed) {
+      node.children.forEach(c => walk(c, labelDepth + (isLabel ? 1 : 0), plainDepth + (isLabel ? 0 : 1)))
+    }
   }
-  roots.forEach(walk)
+  roots.forEach(r => walk(r, 0, 0))
   return rows
 }
 

@@ -15,7 +15,7 @@ import type {
 import { collectDistinctValues } from '../utils/fields'
 import ColorPicker from './ColorPicker'
 import GroupingCsvImport from './GroupingCsvImport'
-import { DEFAULT_COL_WIDTH, toPresetJson } from '../utils/config'
+import { DEFAULT_COL_WIDTH, DEFAULT_LABEL_COLORS, toPresetJson } from '../utils/config'
 import { STRATEGY_LIST } from '../utils/inazuma/strategies'
 
 interface Props {
@@ -194,6 +194,56 @@ export default function ChartSettingsPanel({
       >
         ＋ グルーピングを追加
       </button>
+    </section>
+  )
+
+  // ===== ラベル行(階層の見出し) =====
+  const LABEL_COLOR_SLOTS = 6
+  const labelPalette = settings.labelColors.length > 0 ? settings.labelColors : DEFAULT_LABEL_COLORS
+  const effectiveLabelColors = Array.from(
+    { length: LABEL_COLOR_SLOTS },
+    (_, i) => labelPalette[i % labelPalette.length],
+  )
+  const labelEditor = (
+    <section className="rc-sec">
+      <h4>ラベル行(階層の見出し)</h4>
+      <div className="rc-line">
+        <span>色(階層の深さ順):</span>
+        {effectiveLabelColors.map((c, i) => (
+          <span key={i} className="rc-inline">
+            {i + 1}
+            <ColorPicker
+              label={`${i + 1}段目の色`}
+              value={c}
+              onChange={next => set({ labelColors: effectiveLabelColors.map((v, j) => (j === i ? next : v)) })}
+            />
+          </span>
+        ))}
+      </div>
+      <div className="rc-line">
+        <label>
+          <input
+            type="checkbox"
+            checked={settings.labelRows.parentAsLabel}
+            onChange={e => set({ labelRows: { ...settings.labelRows, parentAsLabel: e.target.checked } })}
+          />{' '}
+          子を持つチケットをラベルとして扱う
+        </label>
+        <span className="rc-note">
+          (オフ: 親チケットも通常のチケット行で、バーを出す / オン: グループと同じ色帯の見出しになり、列は出ない)
+        </span>
+      </div>
+      <div className="rc-line">
+        <label>
+          <input
+            type="checkbox"
+            checked={settings.labelRows.showBar}
+            onChange={e => set({ labelRows: { ...settings.labelRows, showBar: e.target.checked } })}
+          />{' '}
+          ラベル行に期間・進捗のバーを表示する
+        </label>
+        <span className="rc-note">(グループ行と、ラベル扱いの親チケットが対象。進捗は配下のチケットの平均)</span>
+      </div>
     </section>
   )
 
@@ -480,6 +530,17 @@ export default function ChartSettingsPanel({
       </div>
       <div className="rc-line">
         <label>
+          <input
+            type="checkbox"
+            checked={settings.inazuma.includeLabels}
+            onChange={e => set({ inazuma: { ...settings.inazuma, includeLabels: e.target.checked } })}
+          />{' '}
+          ラベル行(グループ・ラベル扱いの親)も線で結ぶ
+        </label>
+        <span className="rc-note">(ラベル行の進捗は配下のチケットの平均。バー付きの親チケットは結びません)</span>
+      </div>
+      <div className="rc-line">
+        <label>
           表示範囲:{' '}
           <select
             value={settings.range.mode}
@@ -614,6 +675,7 @@ export default function ChartSettingsPanel({
     <div className="rc-settings">
       {levelsEditor}
       {groupingsEditor}
+      {labelEditor}
       {columnsEditor}
       {progressEditor}
       {rowColorEditor}

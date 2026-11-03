@@ -10,6 +10,8 @@ import type { GanttRow, InazumaStrategyId } from '../../types'
 export interface InazumaContext {
   /** 基準日の day number */
   baseDay: number
+  /** ラベル行(グループ・ラベル扱いの親チケット)も結ぶ */
+  includeLabels: boolean
 }
 
 export interface InazumaPoint {
@@ -36,19 +38,23 @@ export function offsetForSchedule(start: number, end: number, progress: number, 
   return actual - planned
 }
 
-/** リーフチケット(子を持たない・日付がある)の行だけを結ぶ */
+/**
+ * リーフチケット(子を持たない・日付がある)の行を結ぶ。
+ * includeLabels のときは、ラベル行(配下のリーフの平均進捗)も結ぶ。バー付きの親チケットは結ばない。
+ */
 const leafOnly: InazumaStrategy = {
   id: 'leafOnly',
-  label: 'リーフチケットのみ',
+  label: 'リーフチケット中心',
   computePoints(rows, ctx) {
     const points: InazumaPoint[] = []
     rows.forEach((row, rowIndex) => {
       const node = row.node
-      if (node.kind !== 'issue' || row.hasChildren) return
+      const target = row.isLabel ? ctx.includeLabels : node.kind === 'issue' && !row.hasChildren
+      if (!target) return
       if (node.start == null || node.end == null) return
       points.push({
         rowIndex,
-        offsetDays: offsetForSchedule(node.start, node.end, node.progress, ctx.baseDay),
+        offsetDays: offsetForSchedule(node.start, node.end, row.progress, ctx.baseDay),
       })
     })
     return points

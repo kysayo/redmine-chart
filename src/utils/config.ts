@@ -1,5 +1,8 @@
 import type { ChartSettings, ColumnConfig, PresetSettings, TeamPreset } from '../types'
 
+/** ラベル行の既定の色(淡い緑・橙・紫・青・黄・赤) */
+export const DEFAULT_LABEL_COLORS = ['#c8e6c9', '#ffe0b2', '#e1bee7', '#b3e5fc', '#fff9c4', '#ffcdd2']
+
 export const DEFAULT_COL_WIDTH = 100
 export const DEFAULT_NAME_WIDTH = 300
 const MIN_WIDTH = 30
@@ -45,7 +48,9 @@ export function buildDefaultSettings(): ChartSettings {
     columns: toColumns(['status', 'assigned_to', 'start_date', 'due_date']),
     nameColumn: { width: DEFAULT_NAME_WIDTH, wrap: false },
     statusProgress: {},
-    inazuma: { enabled: true, strategy: 'leafOnly', baseDate: '' },
+    inazuma: { enabled: true, strategy: 'leafOnly', baseDate: '', includeLabels: false },
+    labelRows: { parentAsLabel: false, showBar: true },
+    labelColors: [...DEFAULT_LABEL_COLORS],
     range: { mode: 'auto', beforeDays: 30, afterDays: 90, startDate: '', endDate: '' },
     rowColors: [],
     endDate: { field: '', highlightMissing: false },
@@ -61,6 +66,11 @@ export function mergePreset(base: ChartSettings, preset: Partial<PresetSettings>
     inazuma: { ...base.inazuma, ...(preset.inazuma ?? {}) },
     range: { ...base.range, ...(preset.range ?? {}) },
     endDate: { ...base.endDate, ...(preset.endDate ?? {}) },
+    labelRows: { ...base.labelRows, ...(preset.labelRows ?? {}) },
+    labelColors:
+      Array.isArray(preset.labelColors) && preset.labelColors.length > 0
+        ? preset.labelColors.filter((c): c is string => typeof c === 'string')
+        : base.labelColors,
     columns: preset.columns !== undefined ? normalizeColumns(preset.columns) : base.columns,
     nameColumn: {
       width: clampWidth(preset.nameColumn?.width, base.nameColumn.width),

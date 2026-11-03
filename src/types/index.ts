@@ -78,6 +78,16 @@ export interface InazumaSettings {
   strategy: InazumaStrategyId
   /** 基準日 YYYY-MM-DD。空文字なら今日 */
   baseDate: string
+  /** ラベル行(グループ・ラベル扱いの親)も線で結ぶ */
+  includeLabels: boolean
+}
+
+/** ラベル行(階層の見出し)の扱い */
+export interface LabelRowSettings {
+  /** 子を持つチケットを、グループと同じラベル行として扱う(色帯・列なし)。false=バー付きのチケット行 */
+  parentAsLabel: boolean
+  /** ラベル行に、期間と進捗のバーを出す */
+  showBar: boolean
 }
 
 /** 表示する日付範囲。auto=チケットの日付に合わせる / relative=今日からの相対 / fixed=日付指定 */
@@ -151,6 +161,9 @@ export interface ChartSettings {
   range: RangeSettings
   rowColors: RowColorRule[]
   endDate: EndDateSettings
+  labelRows: LabelRowSettings
+  /** ラベル行の色。ラベルの入れ子の深さ順(1段目、2段目…)。足りない分は先頭から繰り返す */
+  labelColors: string[]
   scale: TimelineScale
   /** 最後に適用したチームプリセット名(表示用) */
   appliedTeamPreset?: string
@@ -200,4 +213,15 @@ export interface GanttRow {
   /** 子ノードを持つか(折り畳み・イナズマ対象判定用。折り畳み中でも true) */
   hasChildren: boolean
   collapsed: boolean
+  /**
+   * ラベル行か。グループ行は常にラベル。子を持つチケットは、設定(parentAsLabel)でラベル扱いにできる。
+   * ラベル行は色帯で表示し、列は出さない(配下の行を束ねる見出し)
+   */
+  isLabel: boolean
+  /** 祖先のうちラベル行の数(=左端に並べる色帯の数)。ラベル行自身の色の番号にもなる */
+  labelDepth: number
+  /** 祖先のうちラベルでない行(バー付きの親チケット)の数。文字のインデントに使う */
+  plainDepth: number
+  /** 表示する進捗率(0-100)。ラベル行は配下のリーフの平均 */
+  progress: number
 }

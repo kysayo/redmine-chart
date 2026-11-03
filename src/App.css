@@ -59,16 +59,16 @@
 #moca-react-chart-root .rc-scroll { overflow-x: auto; overflow-y: hidden; border: 1px solid #ddd; background: #fff; }
 #moca-react-chart-root .rc-inner { position: relative; }
 /* 見出しはページのスクロールに追従させる(GanttChart.tsx が transform を更新)。sticky は横スクロール用コンテナ内だと効かない */
-#moca-react-chart-root .rc-head { position: relative; z-index: 6; display: flex; background: #f3f3f3; border-bottom: 1px solid #ccc; will-change: transform; }
+#moca-react-chart-root .rc-head { position: relative; z-index: 6; display: flex; background: #f3f3f3; border-bottom: 1px solid #444; will-change: transform; }
 /* 親階層の追従行。見出しの直下に重ねる */
 #moca-react-chart-root .rc-sticky { position: absolute; top: 0; left: 0; z-index: 5; will-change: transform; box-shadow: 0 2px 3px rgba(0, 0, 0, 0.12); }
-#moca-react-chart-root .rc-sticky-row { background: #f7f9fc; }
+#moca-react-chart-root .rc-sticky-row { background: #f7f9fc; border-bottom: 1px solid #444; }
 #moca-react-chart-root .rc-sticky-row .rc-left,
 #moca-react-chart-root .rc-sticky-row .rc-lscroll { background: #f7f9fc; }
 #moca-react-chart-root .rc-sticky-svg { display: block; flex: none; background: #f7f9fc; }
-#moca-react-chart-root .rc-left { position: sticky; left: 0; z-index: 3; display: flex; background: #fff; flex: none; border-right: 1px solid #ccc; }
+#moca-react-chart-root .rc-left { position: sticky; left: 0; z-index: 3; display: flex; background: #fff; flex: none; }
 /* 固定されない列(横スクロールで流れる部分) */
-#moca-react-chart-root .rc-lscroll { display: flex; flex: none; border-right: 1px solid #ccc; }
+#moca-react-chart-root .rc-lscroll { display: flex; flex: none; }
 #moca-react-chart-root .rc-left-head { background: #f3f3f3; font-weight: bold; align-items: center; }
 /* 折り返す列: 行の高さが内容に合わせて広がる */
 /* .rc-cell(後ろで定義)の nowrap・padding に負けないよう、クラスを重ねて強くしている */
@@ -93,11 +93,23 @@
 #moca-react-chart-root .rc-head-svg { display: block; flex: none; }
 #moca-react-chart-root .rc-cell {
   box-sizing: border-box; padding: 0 4px; overflow: hidden; white-space: nowrap; text-overflow: ellipsis;
-  display: flex; align-items: center; flex: none;
+  display: flex; align-items: center; flex: none; border-right: 1px solid #444;
 }
 #moca-react-chart-root .rc-body { position: relative; }
 /* border-box にして下線込みで ROW_H(26px) に固定する。ずれると本体の高さを超えて縦スクロールが出る */
-#moca-react-chart-root .rc-row { display: flex; box-sizing: border-box; border-bottom: 1px solid #eee; }
+#moca-react-chart-root .rc-row { display: flex; box-sizing: border-box; }
+#moca-react-chart-root .rc-row.rc-top-dark { border-top: 1px solid #444; }
+#moca-react-chart-root .rc-row.rc-top-dash { border-top: 1px dashed #bbb; }
+#moca-react-chart-root .rc-row.rc-last { border-bottom: 1px solid #444; }
+/* ラベル行: 祖先の色帯(右端が濃い実線で、下の行まで縦につながる)と、右端まで塗るラベル */
+#moca-react-chart-root .rc-band { flex: none; box-sizing: border-box; border-right: 1px solid #444; }
+#moca-react-chart-root .rc-labelcell {
+  display: flex; align-items: center; flex: none; box-sizing: border-box; padding: 0 4px;
+  white-space: nowrap; overflow: visible; font-weight: bold;
+}
+#moca-react-chart-root .rc-labelcell a { color: #1a4d8f; text-decoration: none; }
+#moca-react-chart-root .rc-labelcell a:hover { text-decoration: underline; }
+#moca-react-chart-root .rc-edge { box-sizing: border-box; border-right: 1px solid #444; }
 #moca-react-chart-root .rc-row:hover .rc-left,
 #moca-react-chart-root .rc-row:hover .rc-lscroll { background: #f0f6ff; }
 #moca-react-chart-root .rc-name a { color: #1a4d8f; text-decoration: none; overflow: hidden; text-overflow: ellipsis; }
@@ -118,7 +130,8 @@
 #moca-react-chart-root .rc-sun { fill: #d33; }
 #moca-react-chart-root .rc-weekend { fill: #f4f4f4; }
 #moca-react-chart-root .rc-grid { stroke: #ddd; stroke-width: 1; }
-#moca-react-chart-root .rc-grid-h { stroke: #eee; stroke-width: 1; }
+#moca-react-chart-root .rc-line-dark { stroke: #444; stroke-width: 1; }
+#moca-react-chart-root .rc-line-dash { stroke: #bbb; stroke-width: 1; stroke-dasharray: 3 3; }
 #moca-react-chart-root .rc-today { stroke: #f4a0a0; stroke-width: 1; }
 #moca-react-chart-root .rc-base { stroke: #d00; stroke-width: 1; stroke-dasharray: 4 3; }
 #moca-react-chart-root .rc-inazuma { fill: none; stroke: #d00; stroke-width: 1.6; stroke-linejoin: round; }
