@@ -11,6 +11,7 @@ import type {
   TimelineScale,
 } from '../types'
 import { collectDistinctValues } from '../utils/fields'
+import GroupingCsvImport from './GroupingCsvImport'
 import { toPresetJson } from '../utils/config'
 import { STRATEGY_LIST } from '../utils/inazuma/strategies'
 
@@ -159,6 +160,12 @@ export default function ChartSettingsPanel({
           }
         />
       ))}
+      <GroupingCsvImport
+        listFields={fields.filter(f => f.kind === 'list')}
+        issues={issues}
+        groupings={settings.groupings}
+        onApply={next => set({ groupings: next })}
+      />
       <button
         type="button"
         className="rc-btn"
