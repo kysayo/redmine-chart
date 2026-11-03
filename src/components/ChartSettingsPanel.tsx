@@ -63,9 +63,7 @@ export default function ChartSettingsPanel({
   onApplyTeamPreset,
   onReset,
 }: Props) {
-  const [presetName, setPresetName] = useState(settings.appliedTeamPreset ?? 'preset')
-  const [presetJson, setPresetJson] = useState<string | null>(null)
-  const [copied, setCopied] = useState(false)
+  const [presetName, setPresetName] = useState(settings.appliedTeamPreset ?? '設定')
 
   const fieldOpts: Opt[] = fields.map(f => ({ value: f.key, label: f.name }))
   const listFieldOpts: Opt[] = fields.filter(f => f.kind === 'list').map(f => ({ value: f.key, label: f.name }))
@@ -600,79 +598,71 @@ export default function ChartSettingsPanel({
     </section>
   )
 
-  // ===== プリセット =====
-  const presetEditor = (
+  // ===== プリセット(選択)=====
+  // 管理者が data-team-presets で配布したプリセットを、画面で選んで適用する。設定パネルの一番上に置く
+  const presetPicker = (
     <section className="rc-sec">
-      <h4>プリセット</h4>
-      {teamPresets.length > 0 && (
-        <div className="rc-line">
-          <span>チームプリセット:</span>
-          {teamPresets.map(p => (
-            <button
-              key={p.name}
-              type="button"
-              className={`rc-btn${settings.appliedTeamPreset === p.name ? ' rc-btn-on' : ''}`}
-              onClick={() => onApplyTeamPreset(p)}
-            >
-              {p.name}
-            </button>
-          ))}
-        </div>
-      )}
+      <h4>プリセット選択</h4>
       <div className="rc-line">
-        <input type="text" value={presetName} onChange={e => setPresetName(e.target.value)} placeholder="プリセット名" />
-        <button
-          type="button"
-          className="rc-btn"
-          onClick={() => {
-            setPresetJson(toPresetJson(presetName || 'preset', settings))
-            setCopied(false)
+        {teamPresets.map(pr => (
+          <button
+            key={pr.name}
+            type="button"
+            className={`rc-btn${settings.appliedTeamPreset === pr.name ? ' rc-btn-on' : ''}`}
+            onClick={() => onApplyTeamPreset(pr)}
+          >
+            {pr.name}
+          </button>
+        ))}
+      </div>
+      {settings.appliedTeamPreset && (
+        <div className="rc-note">適用中: {settings.appliedTeamPreset}</div>
+      )}
+    </section>
+  )
+
+  // ===== プリセット(出力)=====
+  // 姉妹プロジェクト(redmine-graph)と同じ。名前を付けて、改行のない1行の JSON をダウンロードする
+  const handleDownloadPresetJson = () => {
+    const json = toPresetJson(presetName.trim() || '設定', settings)
+    const blob = new Blob([json], { type: 'application/json' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = 'redmine-chart-preset.json'
+    document.body.appendChild(a)
+    a.click()
+    document.body.removeChild(a)
+    URL.revokeObjectURL(url)
+  }
+
+  const presetOutput = (
+    <section className="rc-sec">
+      <h4>プリセット出力</h4>
+      <div className="rc-line">
+        <input
+          type="text"
+          value={presetName}
+          onChange={e => setPresetName(e.target.value)}
+          onKeyDown={e => {
+            if (e.key === 'Enter') handleDownloadPresetJson()
           }}
-        >
-          Preset JSON を出力
-        </button>
+          placeholder="プリセット名"
+        />
+        <button type="button" className="rc-btn" onClick={handleDownloadPresetJson}>Preset JSON DL</button>
         <button type="button" className="rc-btn" onClick={onReset}>設定をリセット</button>
       </div>
-      {presetJson != null && (
-        <div>
-          <p className="rc-note">
-            View Customize の <code>data-team-presets</code> に <code>[</code> この JSON <code>]</code> の形で貼り付けると、全員がプリセットとして使えます。
-          </p>
-          <textarea className="rc-json" readOnly value={presetJson} rows={12} onFocus={e => e.currentTarget.select()} />
-          <div className="rc-line">
-            <button
-              type="button"
-              className="rc-btn"
-              onClick={() => {
-                void navigator.clipboard.writeText(presetJson).then(() => setCopied(true))
-              }}
-            >
-              {copied ? 'コピーしました' : 'コピー'}
-            </button>
-            <button
-              type="button"
-              className="rc-btn"
-              onClick={() => {
-                const blob = new Blob([presetJson], { type: 'application/json' })
-                const url = URL.createObjectURL(blob)
-                const a = document.createElement('a')
-                a.href = url
-                a.download = 'redmine-chart-preset.json'
-                a.click()
-                URL.revokeObjectURL(url)
-              }}
-            >
-              ダウンロード
-            </button>
-            <button type="button" className="rc-btn" onClick={() => setPresetJson(null)}>閉じる</button>
-          </div>
-        </div>
-      )}
+      <p className="rc-note">
+        改行のない1行の JSON をダウンロードします。View Customize の <code>data-team-presets</code> に、
+        <code>[</code> この JSON <code>]</code> の形で貼り付けると、全員がプリセットとして使えます。
+      </p>
     </section>
   )
 
   return (
     <div className="rc-settings">
+      {teamPresets.length > 0 && presetPicker}
+      {presetOutput}
       {levelsEditor}
       {groupingsEditor}
       {labelEditor}
@@ -681,7 +671,6 @@ export default function ChartSettingsPanel({
       {rowColorEditor}
       {endDateEditor}
       {displayEditor}
-      {presetEditor}
     </div>
   )
 }

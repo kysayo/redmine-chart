@@ -71,7 +71,8 @@ npm run lint
 ## 設定とプリセット
 
 - 設定パネルの変更は localStorage に保存される。
-- 「Preset JSON を出力」で `{ name, settings }` を出力 → View Customize の `data-team-presets` に `[ ... ]` で囲んで貼ると、チームプリセットとして全員が使える。
+- 設定パネルの一番上に「プリセット選択」(チームプリセットのボタン。適用中の名前も表示)、その次に「プリセット出力」。
+- 「Preset JSON DL」で、プリセット名を付けて `redmine-chart-preset.json` をダウンロードする(姉妹プロジェクト redmine-graph と同じ)。中身は `{ name, settings }` を**改行なしの1行**にしたもの。View Customize の `data-team-presets` に `[ ... ]` で囲んで貼ると、チームプリセットとして全員が使える。
 - 保存済み設定が無い初回は、先頭のチームプリセットが自動適用される。
 
 ## Redmine への埋め込み(View Customize)

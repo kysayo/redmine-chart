@@ -27,7 +27,6 @@
 #moca-react-chart-root .rc-num { display: inline-block; width: 18px; text-align: center; color: #888; }
 #moca-react-chart-root .rc-card { border: 1px solid #ddd; background: #fff; border-radius: 4px; padding: 6px 8px; margin: 6px 0; }
 #moca-react-chart-root .rc-grid-2 { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 0 16px; }
-#moca-react-chart-root .rc-json { width: 100%; font-family: monospace; font-size: 11px; box-sizing: border-box; }
 #moca-react-chart-root .rc-settings input[type='number'] { width: 64px; }
 
 /* カラーピッカー(30色パレット) */

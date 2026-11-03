@@ -102,5 +102,6 @@ export function toPresetJson(name: string, settings: ChartSettings): string {
   const rest: Partial<ChartSettings> = { ...settings }
   delete rest.version
   delete rest.appliedTeamPreset
-  return JSON.stringify({ name, settings: rest }, null, 2)
+  // 改行なしの1行。View Customize のコードにそのまま貼れる
+  return JSON.stringify({ name, settings: rest })
 }
