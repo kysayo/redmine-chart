@@ -80,6 +80,13 @@ export interface InazumaSettings {
   baseDate: string
   /** ラベル行(グループ・ラベル扱いの親)も線で結ぶ */
   includeLabels: boolean
+  /**
+   * 「予定通り」とみなすステータス名。このステータスのチケットは、基準日が終了日を超えていなければ
+   * 基準線上(予定通り)に置き、超えていれば進捗が(100 - onTrackLatePercent)% のものとして遅れで表示する
+   */
+  onTrackStatuses: string[]
+  /** 「予定通り」のステータスが期日を超えたときの遅れ(%) */
+  onTrackLatePercent: number
 }
 
 /** ラベル行(階層の見出し)の扱い */

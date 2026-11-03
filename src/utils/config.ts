@@ -48,7 +48,7 @@ export function buildDefaultSettings(): ChartSettings {
     columns: toColumns(['status', 'assigned_to', 'start_date', 'due_date']),
     nameColumn: { width: DEFAULT_NAME_WIDTH, wrap: false },
     statusProgress: {},
-    inazuma: { enabled: true, strategy: 'leafOnly', baseDate: '', includeLabels: false },
+    inazuma: { enabled: true, strategy: 'leafOnly', baseDate: '', includeLabels: false, onTrackStatuses: [], onTrackLatePercent: 10 },
     labelRows: { parentAsLabel: false, showBar: true },
     labelColors: [...DEFAULT_LABEL_COLORS],
     range: { mode: 'auto', beforeDays: 30, afterDays: 90, startDate: '', endDate: '' },

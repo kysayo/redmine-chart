@@ -244,7 +244,12 @@ export default function GanttChart({
     if (!inazuma.enabled) return ''
     const strategy = STRATEGIES[inazuma.strategy]
     if (!strategy) return ''
-    const points = strategy.computePoints(rows, { baseDay, includeLabels: inazuma.includeLabels })
+    const points = strategy.computePoints(rows, {
+      baseDay,
+      includeLabels: inazuma.includeLabels,
+      onTrackStatuses: inazuma.onTrackStatuses ?? [],
+      onTrackLatePercent: inazuma.onTrackLatePercent ?? 10,
+    })
     return buildInazumaPolyline(
       points,
       (baseDay - minDay) * px + px / 2,

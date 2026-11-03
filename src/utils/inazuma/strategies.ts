@@ -12,6 +12,10 @@ export interface InazumaContext {
   baseDay: number
   /** ラベル行(グループ・ラベル扱いの親チケット)も結ぶ */
   includeLabels: boolean
+  /** 「予定通り」とみなすステータス名 */
+  onTrackStatuses: string[]
+  /** 「予定通り」のステータスが期日を超えたときの遅れ(%) */
+  onTrackLatePercent: number
 }
 
 export interface InazumaPoint {
@@ -58,10 +62,19 @@ const leafOnly: InazumaStrategy = {
       const target = row.isLabel ? ctx.includeLabels : node.kind === 'issue' && !row.hasChildren
       if (!target) return
       if (node.start == null || node.end == null) return
-      // 終了日が無いチケットは、いつまでに終わる予定か分からないので、遅れ・前倒しを判定せず基準線上に置く
-      const offsetDays = node.endMissing
-        ? 0
-        : offsetForSchedule(node.start, node.end, row.progress, ctx.baseDay)
+      let offsetDays: number
+      if (node.endMissing) {
+        // 終了日が無いチケットは、いつまでに終わる予定か分からないので、遅れ・前倒しを判定せず基準線上に置く
+        offsetDays = 0
+      } else if (!row.isLabel && node.issue && ctx.onTrackStatuses.includes(node.issue.status.name)) {
+        // 「予定通り」のステータス: 期日(終了日)を超えていなければ予定通り(基準線上)。
+        // 超えていれば、進捗が(100 - 遅れ)% のものとして、バーの先端の位置に遅れで出す
+        const late = Math.min(100, Math.max(0, ctx.onTrackLatePercent))
+        offsetDays =
+          ctx.baseDay <= node.end ? 0 : offsetForSchedule(node.start, node.end, 100 - late, ctx.baseDay)
+      } else {
+        offsetDays = offsetForSchedule(node.start, node.end, row.progress, ctx.baseDay)
+      }
       points.push({ rowIndex, offsetDays })
     })
     return points

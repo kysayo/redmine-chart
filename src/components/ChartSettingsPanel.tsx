@@ -362,13 +362,41 @@ export default function ChartSettingsPanel({
     else next[status] = Math.min(100, Math.max(0, Number(raw)))
     set({ statusProgress: next })
   }
+  const onTrack = settings.inazuma.onTrackStatuses ?? []
+  const setOnTrack = (status: string, checked: boolean) =>
+    set({
+      inazuma: {
+        ...settings.inazuma,
+        onTrackStatuses: checked ? [...onTrack.filter(n => n !== status), status] : onTrack.filter(n => n !== status),
+      },
+    })
   const progressEditor = (
     <section className="rc-sec">
       <h4>ステータス別の進捗率(イナズマ線・バーの塗りに使用)</h4>
       <p className="rc-note">空欄のステータスは「終了系のステータスなら100%、それ以外は0%」になります(チケットの「進捗率」欄は使いません)。</p>
+      <p className="rc-note">
+        「予定通り」にチェックしたステータスは、イナズマ線で、期日(終了日)を超えていなければ予定通り(基準線上)に表示し、
+        超えていれば進捗が(100 − 遅れ)% のものとして遅れで表示します。バーの塗りは、上の進捗率のままです。
+      </p>
+      <div className="rc-line">
+        <label>
+          期日を超えたときの遅れ:{' '}
+          <input
+            type="number"
+            min={0}
+            max={100}
+            step={5}
+            value={settings.inazuma.onTrackLatePercent ?? 10}
+            onChange={e =>
+              set({ inazuma: { ...settings.inazuma, onTrackLatePercent: Math.min(100, Math.max(0, Number(e.target.value))) } })
+            }
+          />{' '}
+          %
+        </label>
+      </div>
       <div className="rc-grid-2">
         {statusNames.map(name => (
-          <label key={name} className="rc-line">
+          <div key={name} className="rc-line">
             <span className="rc-grow">{name}</span>
             <input
               type="number"
@@ -379,7 +407,11 @@ export default function ChartSettingsPanel({
               onChange={e => setProgress(name, e.target.value)}
             />
             <span>%</span>
-          </label>
+            <label className="rc-inline" title="期日を超えていなければ予定通り。超えていれば遅れで表示">
+              <input type="checkbox" checked={onTrack.includes(name)} onChange={e => setOnTrack(name, e.target.checked)} />
+              予定通り
+            </label>
+          </div>
         ))}
       </div>
     </section>
